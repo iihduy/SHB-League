@@ -20,7 +20,12 @@
     --lose:#2A3F35;
   }
   *{box-sizing:border-box;}
+  html{scrollbar-width:thin;scrollbar-color:var(--pitch-line) var(--pitch-dark);}
   body{margin:0;background:var(--pitch-dark);font-family:'Inter',sans-serif;color:var(--chalk);padding:32px 16px 60px;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-track{background:var(--pitch-dark);}
+  ::-webkit-scrollbar-thumb{background:var(--pitch-line);border-radius:4px;}
+  ::-webkit-scrollbar-button{display:none;height:0;width:0;}
   .board{max-width:640px;margin:0 auto;}
   .board-top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--pitch-line);padding-bottom:16px;margin-bottom:0;}
   .brand{display:flex;align-items:center;gap:14px;}
@@ -32,9 +37,9 @@
   @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:0.25;} }
   @media (prefers-reduced-motion: reduce){ .live-dot{animation:none;} }
 
-  .tabs{display:flex;gap:24px;margin-top:14px;border-bottom:1px solid var(--pitch-line);}
+  .tabs{display:flex;gap:20px;margin-top:14px;border-bottom:1px solid var(--pitch-line);overflow-x:auto;overflow-y:hidden;}
   .tab-btn{
-    background:none;border:none;cursor:pointer;
+    background:none;border:none;cursor:pointer;white-space:nowrap;
     font-family:'Oswald',sans-serif;font-size:14px;color:var(--muted);
     padding:10px 2px;border-bottom:2px solid transparent;margin-bottom:-1px;
   }
@@ -67,7 +72,7 @@
   .status{color:var(--muted);font-size:13px;margin-top:16px;}
 
   /* --- matrik pertemuan --- */
-  .matrix-scroll{overflow-x:auto;margin-top:16px;padding-bottom:4px;}
+  .matrix-scroll{overflow-x:auto;overflow-y:hidden;margin-top:16px;padding-bottom:4px;}
   table.matrix{border-collapse:separate;border-spacing:0;width:auto;margin-top:0;}
   table.matrix th, table.matrix td{
     border-bottom:1px solid rgba(31,77,55,0.5);
@@ -75,50 +80,69 @@
     padding:0;
   }
   table.matrix thead th{
-    height:74px;
-    width:34px;
-    min-width:34px;
-    vertical-align:bottom;
-    padding-bottom:6px;
-    position:relative;
+    height:74px;width:34px;min-width:34px;
+    vertical-align:bottom;padding-bottom:6px;position:relative;
     border-bottom:1px solid var(--pitch-line);
   }
   table.matrix thead th span{
-    display:inline-block;
-    transform:rotate(-40deg);
-    transform-origin:left bottom;
-    white-space:nowrap;
-    font-family:'Oswald',sans-serif;
-    font-size:12px;
-    color:var(--muted);
+    display:inline-block;transform:rotate(-40deg);transform-origin:left bottom;
+    white-space:nowrap;font-family:'Oswald',sans-serif;font-size:12px;color:var(--muted);
   }
   table.matrix thead th:first-child{background:var(--pitch-dark);}
   table.matrix tbody th{
-    font-family:'Inter',sans-serif;
-    font-weight:600;
-    font-size:13px;
-    text-align:left;
-    padding:0 10px 0 4px;
-    white-space:nowrap;
-    position:sticky;
-    left:0;
-    background:var(--pitch-dark);
-    z-index:1;
+    font-family:'Inter',sans-serif;font-weight:600;font-size:13px;text-align:left;
+    padding:0 10px 0 4px;white-space:nowrap;position:sticky;left:0;
+    background:var(--pitch-dark);z-index:1;
   }
   table.matrix tbody tr:nth-child(even) th{background:var(--pitch-panel);}
   table.matrix td{
-    width:34px;
-    min-width:34px;
-    height:34px;
-    font-family:'Oswald',sans-serif;
-    font-size:13px;
-    font-weight:600;
-    color:var(--chalk);
+    width:34px;min-width:34px;height:34px;
+    font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:var(--chalk);
   }
   table.matrix td.mx-win{background:var(--win);}
   table.matrix td.mx-draw{background:var(--draw);color:#2a2109;}
   table.matrix td.mx-lose{background:var(--lose);color:var(--muted);}
   table.matrix td.mx-self{background:#000;color:var(--pitch-line);}
+
+  /* --- hasil pertandingan --- */
+  .match-week{
+    font-family:'Oswald',sans-serif;font-size:12px;color:var(--muted);
+    margin:20px 0 4px;padding-bottom:6px;border-bottom:1px solid var(--pitch-line);
+  }
+  .match-week:first-child{margin-top:12px;}
+  .match-row{display:flex;align-items:center;padding:11px 0;border-bottom:1px solid rgba(31,77,55,0.5);}
+  .match-team{flex:1;font-size:14px;min-width:0;}
+  .match-team.home{text-align:right;}
+  .match-team.away{text-align:left;}
+  .match-team.winner{color:var(--gold);font-weight:700;}
+  .match-score{
+    font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;
+    padding:4px 12px;margin:0 12px;white-space:nowrap;
+    background:var(--pitch-panel);border-radius:3px;flex-shrink:0;
+  }
+  .hasil-controls{display:flex;gap:10px;margin-top:14px;}
+  .search-box{
+    flex:1;padding:10px 12px;
+    background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:4px;
+    color:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;
+    min-width:0;
+  }
+  .search-box::placeholder{color:var(--muted);}
+  .search-box:focus{outline:none;border-color:var(--gold);}
+  .filter-select{
+    -webkit-appearance:none;-moz-appearance:none;appearance:none;
+    padding:10px 28px 10px 10px;
+    background-color:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:4px;
+    color:var(--chalk);font-family:'Oswald',sans-serif;font-size:13px;
+    flex-shrink:0;max-width:150px;
+    background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%238FAF9B' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 10px center;
+    background-size:10px 7px;
+  }
+  .filter-select:focus{outline:none;border-color:var(--gold);}
+  .filter-select option{background:var(--pitch-panel);color:var(--chalk);}
+  .match-empty{text-align:center;padding:24px 0;color:var(--muted);font-size:13px;}
 </style>
 </head>
 <body>
@@ -136,6 +160,7 @@
 
   <div class="tabs">
     <button class="tab-btn active" data-view="klasemen">Klasemen</button>
+    <button class="tab-btn" data-view="hasil">Hasil</button>
     <button class="tab-btn" data-view="matrix">Matrik Pertemuan</button>
   </div>
 
@@ -153,6 +178,19 @@
       <div><span class="dot red"></span>Zona bawah</div>
     </div>
     <p class="status" id="status-klasemen"></p>
+  </div>
+
+  <div id="view-hasil" class="view">
+    <div class="hasil-controls">
+      <input type="text" id="hasil-search" class="search-box" placeholder="Cari nama pemain..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <select id="hasil-filter" class="filter-select">
+        <option value="">Semua Pemain</option>
+      </select>
+    </div>
+    <div id="hasil-list">
+      <p style="text-align:center;padding:20px;color:var(--muted);">Memuat data...</p>
+    </div>
+    <p class="status" id="status-hasil"></p>
   </div>
 
   <div id="view-matrix" class="view">
@@ -180,6 +218,8 @@
   var RANGE_KLASEMEN = "M2:V50";
   var GID_MATRIX = "414529039";
   var RANGE_MATRIX = "B3:P19";
+  var GID_HASIL = "2057508104";
+  var RANGE_HASIL = "A2:H100";
   // ----------------------
 
   function loadSheetRange(gid, range, callback, statusElId) {
@@ -236,26 +276,20 @@
   }
 
   function renderMatrix(table) {
-    // kolom header (nama lawan) dari cols, kolom pertama dilewati (nama pemain)
     var opponentNames = table.cols.slice(1).map(function (c) { return c.label; });
-
     var headHtml = "<th></th>" + opponentNames.map(function (name) {
       return "<th><span>" + name + "</span></th>";
     }).join("");
     document.getElementById("matrix-head").innerHTML = headHtml;
 
     var rows = table.rows
-      .map(function (r) {
-        return r.c.map(function (cell) { return cell ? cell.v : null; });
-      })
-      .filter(function (r) { return r[0]; }); // buang baris tanpa nama
+      .map(function (r) { return r.c.map(function (cell) { return cell ? cell.v : null; }); })
+      .filter(function (r) { return r[0]; });
 
     var bodyHtml = rows.map(function (row) {
       var name = row[0];
       var cells = row.slice(1).map(function (val) {
-        if (val === "-" || val === null) {
-          return "<td class='mx-self'>-</td>";
-        }
+        if (val === "-" || val === null) return "<td class='mx-self'>-</td>";
         var cls = val >= 2 ? "mx-win" : (val == 1 ? "mx-draw" : "mx-lose");
         return "<td class='" + cls + "'>" + val + "</td>";
       }).join("");
@@ -264,23 +298,97 @@
     document.getElementById("matrix-rows").innerHTML = bodyHtml;
   }
 
-  // ---- tab switching ----
+  var allMatches = [];
+
+  function renderHasil(table) {
+    // kolom: No, Minggu Ke-, Home, Away, Skor Home, Skor Away, Status, Pemenang
+    var rows = table.rows.map(function (r) {
+      return r.c.map(function (cell) { return cell ? cell.v : null; });
+    });
+    var completed = rows.filter(function (r) {
+      return r[6] === "Selesai" && r[2] && r[3];
+    });
+    completed.reverse(); // terbaru di atas
+    allMatches = completed;
+    populatePlayerFilter(allMatches);
+    applyHasilFilters();
+  }
+
+  function populatePlayerFilter(matches) {
+    var names = {};
+    matches.forEach(function (row) {
+      names[row[2]] = true;
+      names[row[3]] = true;
+    });
+    var sorted = Object.keys(names).sort();
+    var select = document.getElementById("hasil-filter");
+    sorted.forEach(function (name) {
+      var opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      select.appendChild(opt);
+    });
+  }
+
+  function applyHasilFilters() {
+    var q = document.getElementById("hasil-search").value.trim().toLowerCase();
+    var selected = document.getElementById("hasil-filter").value;
+    var filtered = allMatches.filter(function (row) {
+      var matchesSearch = !q || row[2].toLowerCase().indexOf(q) !== -1 || row[3].toLowerCase().indexOf(q) !== -1;
+      var matchesFilter = !selected || row[2] === selected || row[3] === selected;
+      return matchesSearch && matchesFilter;
+    });
+    drawMatchList(filtered);
+  }
+
+  function drawMatchList(matches) {
+    var html = matches.map(function (row) {
+      var home = row[2], away = row[3], scoreHome = row[4], scoreAway = row[5], winner = row[7];
+      var homeClass = "match-team home" + (winner === home ? " winner" : "");
+      var awayClass = "match-team away" + (winner === away ? " winner" : "");
+      return (
+        '<div class="match-row">' +
+        '<div class="' + homeClass + '">' + home + '</div>' +
+        '<div class="match-score">' + scoreHome + ' - ' + scoreAway + '</div>' +
+        '<div class="' + awayClass + '">' + away + '</div>' +
+        '</div>'
+      );
+    }).join("");
+
+    if (!matches.length) {
+      html = '<p class="match-empty">Tidak ada pertandingan yang cocok.</p>';
+    }
+    document.getElementById("hasil-list").innerHTML = html;
+  }
+
+  document.getElementById("hasil-search").addEventListener("input", applyHasilFilters);
+  document.getElementById("hasil-filter").addEventListener("change", function () {
+    document.getElementById("hasil-search").value = "";
+    applyHasilFilters();
+  });
+
+  // ---- tab switching (lazy-load tiap tab) ----
   var tabButtons = document.querySelectorAll(".tab-btn");
-  var matrixLoaded = false;
+  var loadedViews = { klasemen: false, hasil: false, matrix: false };
+  var loaders = {
+    hasil: function () { loadSheetRange(GID_HASIL, RANGE_HASIL, renderHasil, "status-hasil"); },
+    matrix: function () { loadSheetRange(GID_MATRIX, RANGE_MATRIX, renderMatrix, "status-matrix"); }
+  };
   tabButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
       tabButtons.forEach(function (b) { b.classList.remove("active"); });
       btn.classList.add("active");
       document.querySelectorAll(".view").forEach(function (v) { v.classList.remove("active"); });
-      document.getElementById("view-" + btn.dataset.view).classList.add("active");
-
-      if (btn.dataset.view === "matrix" && !matrixLoaded) {
-        matrixLoaded = true;
-        loadSheetRange(GID_MATRIX, RANGE_MATRIX, renderMatrix, "status-matrix");
+      var view = btn.dataset.view;
+      document.getElementById("view-" + view).classList.add("active");
+      if (!loadedViews[view] && loaders[view]) {
+        loadedViews[view] = true;
+        loaders[view]();
       }
     });
   });
 
+  loadedViews.klasemen = true;
   loadSheetRange(GID_KLASEMEN, RANGE_KLASEMEN, renderKlasemen, "status-klasemen");
 </script>
 </body>

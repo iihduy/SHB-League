@@ -217,7 +217,7 @@
   var GID_KLASEMEN = "696233348";
   var RANGE_KLASEMEN = "M2:V50";
   var GID_MATRIX = "414529039";
-  var RANGE_MATRIX = "B3:P19";
+  var RANGE_MATRIX = "B3:AP43"; // buffer sampai 40 pemain, kolom/baris kosong otomatis disaring
   var GID_HASIL = "2057508104";
   var RANGE_HASIL = "A2:H100";
   // ----------------------
@@ -276,7 +276,12 @@
   }
 
   function renderMatrix(table) {
-    var opponentNames = table.cols.slice(1).map(function (c) { return c.label; });
+    // ambil semua label kolom lawan, lalu saring yang kosong (slot buffer belum terpakai)
+    var allNames = table.cols.slice(1).map(function (c) { return c.label; });
+    var validIdx = [];
+    allNames.forEach(function (name, idx) { if (name) validIdx.push(idx); });
+    var opponentNames = validIdx.map(function (idx) { return allNames[idx]; });
+
     var headHtml = "<th></th>" + opponentNames.map(function (name) {
       return "<th><span>" + name + "</span></th>";
     }).join("");
@@ -284,12 +289,13 @@
 
     var rows = table.rows
       .map(function (r) { return r.c.map(function (cell) { return cell ? cell.v : null; }); })
-      .filter(function (r) { return r[0]; });
+      .filter(function (r) { return r[0]; }); // buang baris tanpa nama (slot buffer kosong)
 
     var bodyHtml = rows.map(function (row) {
       var name = row[0];
-      var cells = row.slice(1).map(function (val) {
-        if (val === "-" || val === null) return "<td class='mx-self'>-</td>";
+      var cells = validIdx.map(function (idx) {
+        var val = row[idx + 1]; // +1 karena kolom pertama row adalah nama
+        if (val === "-" || val === null || val === "") return "<td class='mx-self'>-</td>";
         var cls = val >= 2 ? "mx-win" : (val == 1 ? "mx-draw" : "mx-lose");
         return "<td class='" + cls + "'>" + val + "</td>";
       }).join("");

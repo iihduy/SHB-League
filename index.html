@@ -143,6 +143,15 @@
   .filter-select:focus{outline:none;border-color:var(--gold);}
   .filter-select option{background:var(--pitch-panel);color:var(--chalk);}
   .match-empty{text-align:center;padding:24px 0;color:var(--muted);font-size:13px;}
+
+  /* --- riwayat --- */
+  .hof-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 4px;border-bottom:1px solid rgba(31,77,55,0.5);
+  }
+  .hof-bulan{font-family:'Oswald',sans-serif;font-size:13px;color:var(--muted);}
+  .hof-juara{font-size:15px;font-weight:700;color:var(--gold);}
+  .hof-poin{font-family:'Oswald',sans-serif;font-size:13px;color:var(--chalk);}
 </style>
 </head>
 <body>
@@ -162,6 +171,7 @@
     <button class="tab-btn active" data-view="klasemen">Klasemen</button>
     <button class="tab-btn" data-view="hasil">Hasil</button>
     <button class="tab-btn" data-view="matrix">Matrik Pertemuan</button>
+    <button class="tab-btn" data-view="riwayat">Riwayat</button>
   </div>
 
   <div id="view-klasemen" class="view active">
@@ -209,6 +219,27 @@
     </div>
     <p class="status" id="status-matrix"></p>
   </div>
+
+  <div id="view-riwayat" class="view">
+    <div id="riwayat-hof">
+      <p style="text-align:center;padding:20px;color:var(--muted);">Memuat data...</p>
+    </div>
+
+    <div class="hasil-controls" style="margin-top:22px;">
+      <select id="riwayat-bulan" class="filter-select" style="flex:1;max-width:none;">
+        <option value="">Pilih bulan...</option>
+      </select>
+    </div>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Nama</th><th>Main</th><th>M</th><th>S</th><th>K</th><th>GM</th><th>GK</th><th>SG</th><th>Poin</th></tr>
+      </thead>
+      <tbody id="riwayat-rows">
+        <tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Pilih bulan untuk lihat klasemen lengkapnya.</td></tr>
+      </tbody>
+    </table>
+    <p class="status" id="status-riwayat"></p>
+  </div>
 </div>
 
 <script>
@@ -220,10 +251,16 @@
   var RANGE_MATRIX = "B3:AP43"; // buffer sampai 40 pemain, kolom/baris kosong otomatis disaring
   var GID_HASIL = "2057508104";
   var RANGE_HASIL = "A2:H100";
+  // tab di bawah ini dibuat OTOMATIS oleh skrip Apps Script saat reset bulanan pertama terjadi,
+  // jadi belum punya gid tetap -- dipanggil pakai nama tab, bukan gid
+  var SHEET_RIWAYAT_JUARA = "Riwayat Juara";
+  var RANGE_RIWAYAT_JUARA = "A1:K300";
+  var SHEET_RIWAYAT_KLASEMEN = "Riwayat Klasemen";
+  var RANGE_RIWAYAT_KLASEMEN = "A1:K6000";
   // ----------------------
 
-  function loadSheetRange(gid, range, callback, statusElId) {
-    var callbackName = "__gvizCallback_" + gid + "_" + Math.random().toString(36).slice(2);
+  function gvizFetch_(urlExtra, callback, statusElId) {
+    var callbackName = "__gvizCallback_" + Math.random().toString(36).slice(2);
     window[callbackName] = function (response) {
       try {
         callback(response.table);
@@ -235,8 +272,7 @@
     window.google = window.google || { visualization: { Query: {} } };
     window.google.visualization.Query.setResponse = window[callbackName];
 
-    var url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
-      "/gviz/tq?tqx=out:json&gid=" + gid + "&range=" + range;
+    var url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&" + urlExtra;
     var script = document.createElement("script");
     script.src = url;
     script.onerror = function () {
@@ -244,6 +280,14 @@
         "Gagal memuat data. Pastikan sheet sudah dibagikan sebagai \"Anyone with the link\".";
     };
     document.body.appendChild(script);
+  }
+
+  function loadSheetRange(gid, range, callback, statusElId) {
+    gvizFetch_("gid=" + gid + "&range=" + range, callback, statusElId);
+  }
+
+  function loadSheetRangeByName(sheetName, range, callback, statusElId) {
+    gvizFetch_("sheet=" + encodeURIComponent(sheetName) + "&range=" + range, callback, statusElId);
   }
 
   function renderKlasemen(table) {
@@ -305,6 +349,88 @@
   }
 
   var allMatches = [];
+
+  function renderHOF(table) {
+    var rows = table.rows
+      .map(function (r) { return r.c.map(function (cell) { return cell ? cell.v : null; }); })
+      .filter(function (r) { return r[0] && r[1]; }); // Bulan & Nama harus ada
+    rows.reverse(); // terbaru di atas
+
+    if (!rows.length) {
+      document.getElementById("riwayat-hof").innerHTML =
+        '<p style="text-align:center;padding:20px;color:var(--muted);">Belum ada riwayat juara.</p>';
+      return;
+    }
+
+    var html = rows.map(function (row) {
+      var bulan = row[0], juara = row[1], poin = row[9];
+      return (
+        '<div class="hof-row">' +
+        '<div class="hof-bulan">' + bulan + '</div>' +
+        '<div class="hof-juara">🏆 ' + juara + '</div>' +
+        '<div class="hof-poin">' + poin + ' pts</div>' +
+        '</div>'
+      );
+    }).join("");
+    document.getElementById("riwayat-hof").innerHTML = html;
+  }
+
+  var riwayatKlasemenData = [];
+
+  function renderRiwayatKlasemen(table) {
+    var rows = table.rows
+      .map(function (r) { return r.c.map(function (cell) { return cell ? cell.v : null; }); })
+      .filter(function (r) { return r[0] && r[2]; }); // Bulan & Nama harus ada
+    riwayatKlasemenData = rows;
+
+    var bulanUnik = [];
+    rows.forEach(function (r) {
+      if (bulanUnik.indexOf(r[0]) === -1) bulanUnik.push(r[0]);
+    });
+
+    var select = document.getElementById("riwayat-bulan");
+    bulanUnik.forEach(function (bulan) {
+      var opt = document.createElement("option");
+      opt.value = bulan;
+      opt.textContent = bulan;
+      select.appendChild(opt);
+    });
+
+    if (bulanUnik.length) {
+      select.value = bulanUnik[bulanUnik.length - 1]; // default: bulan terbaru
+      drawRiwayatTable(select.value);
+    }
+  }
+
+  function drawRiwayatTable(bulan) {
+    var rowsBulan = riwayatKlasemenData.filter(function (r) { return r[0] === bulan; });
+    if (!bulan || !rowsBulan.length) {
+      document.getElementById("riwayat-rows").innerHTML =
+        '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Pilih bulan untuk lihat klasemen lengkapnya.</td></tr>';
+      return;
+    }
+    var html = rowsBulan.map(function (row) {
+      // row: Bulan, Peringkat, Nama, Main, M, S, K, GM, GK, SG, Poin
+      var sg = row[9];
+      var sgClass = sg > 0 ? "sg-pos" : (sg < 0 ? "sg-neg" : "");
+      var sgLabel = sg > 0 ? "+" + sg : sg;
+      return (
+        "<tr>" +
+        "<td class='rank'>" + row[1] + "</td>" +
+        "<td>" + row[2] + "</td>" +
+        "<td>" + row[3] + "</td>" +
+        "<td>" + row[4] + "</td>" +
+        "<td>" + row[5] + "</td>" +
+        "<td>" + row[6] + "</td>" +
+        "<td>" + row[7] + "</td>" +
+        "<td>" + row[8] + "</td>" +
+        "<td class='" + sgClass + "'>" + sgLabel + "</td>" +
+        "<td class='poin'>" + row[10] + "</td>" +
+        "</tr>"
+      );
+    }).join("");
+    document.getElementById("riwayat-rows").innerHTML = html;
+  }
 
   function renderHasil(table) {
     // kolom: No, Minggu Ke-, Home, Away, Skor Home, Skor Away, Status, Pemenang
@@ -375,10 +501,14 @@
 
   // ---- tab switching (lazy-load tiap tab) ----
   var tabButtons = document.querySelectorAll(".tab-btn");
-  var loadedViews = { klasemen: false, hasil: false, matrix: false };
+  var loadedViews = { klasemen: false, hasil: false, matrix: false, riwayat: false };
   var loaders = {
     hasil: function () { loadSheetRange(GID_HASIL, RANGE_HASIL, renderHasil, "status-hasil"); },
-    matrix: function () { loadSheetRange(GID_MATRIX, RANGE_MATRIX, renderMatrix, "status-matrix"); }
+    matrix: function () { loadSheetRange(GID_MATRIX, RANGE_MATRIX, renderMatrix, "status-matrix"); },
+    riwayat: function () {
+      loadSheetRangeByName(SHEET_RIWAYAT_JUARA, RANGE_RIWAYAT_JUARA, renderHOF, "status-riwayat");
+      loadSheetRangeByName(SHEET_RIWAYAT_KLASEMEN, RANGE_RIWAYAT_KLASEMEN, renderRiwayatKlasemen, "status-riwayat");
+    }
   };
   tabButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
@@ -392,6 +522,10 @@
         loaders[view]();
       }
     });
+  });
+
+  document.getElementById("riwayat-bulan").addEventListener("change", function (e) {
+    drawRiwayatTable(e.target.value);
   });
 
   loadedViews.klasemen = true;

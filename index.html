@@ -144,14 +144,59 @@
   .filter-select option{background:var(--pitch-panel);color:var(--chalk);}
   .match-empty{text-align:center;padding:24px 0;color:var(--muted);font-size:13px;}
 
-  /* --- riwayat --- */
-  .hof-row{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:12px 4px;border-bottom:1px solid rgba(31,77,55,0.5);
+  /* --- riwayat: podium --- */
+  .podium{
+    display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;justify-content:center;
   }
-  .hof-bulan{font-family:'Oswald',sans-serif;font-size:13px;color:var(--muted);}
-  .hof-juara{font-size:15px;font-weight:700;color:var(--gold);}
-  .hof-poin{font-family:'Oswald',sans-serif;font-size:13px;color:var(--chalk);}
+  .podium-card{
+    flex:1;min-width:120px;max-width:220px;
+    background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:6px;
+    padding:20px 12px;text-align:center;cursor:default;
+    transition:transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .podium-card:hover{
+    transform:translateY(-4px);
+    border-color:var(--gold);
+    box-shadow:0 6px 18px rgba(0,0,0,0.35);
+  }
+  .podium-card.first{
+    border-color:var(--gold);
+    background:linear-gradient(180deg, rgba(232,179,61,0.14), var(--pitch-panel));
+    padding-top:28px;padding-bottom:28px;
+    order:0;
+  }
+  .podium-card .medal{font-size:30px;line-height:1;margin-bottom:8px;}
+  .podium-card .label{
+    font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:0.5px;
+    color:var(--muted);margin-bottom:4px;text-transform:uppercase;
+  }
+  .podium-card.first .label{color:var(--gold);}
+  .podium-card .nama{font-size:16px;font-weight:700;color:var(--chalk);margin-bottom:4px;}
+  .podium-card.first .nama{color:var(--gold);font-size:19px;}
+  .podium-card .pts{font-family:'Oswald',sans-serif;font-size:13px;color:var(--muted);}
+
+  .riwayat-stats{
+    display:flex;flex-wrap:wrap;
+    background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:6px;
+    margin-top:18px;padding:14px 0;
+  }
+  .riwayat-stat{
+    flex:1;min-width:110px;text-align:center;padding:6px 8px;
+    border-right:1px solid var(--pitch-line);
+  }
+  .riwayat-stat:last-child{border-right:none;}
+  .riwayat-stat .stat-label{
+    font-family:'Oswald',sans-serif;font-size:10px;color:var(--muted);
+    letter-spacing:0.5px;margin-bottom:4px;text-transform:uppercase;
+  }
+  .riwayat-stat .stat-value{font-size:15px;font-weight:700;color:var(--chalk);}
+  .riwayat-stat .stat-value.gold{color:var(--gold);}
+
+  @media (max-width:480px){
+    .podium-card{min-width:95px;}
+    .podium-card.first{order:-1;flex-basis:100%;max-width:none;}
+    .riwayat-stat{min-width:45%;border-right:none;border-bottom:1px solid var(--pitch-line);padding:10px 8px;}
+  }
 </style>
 </head>
 <body>
@@ -221,23 +266,16 @@
   </div>
 
   <div id="view-riwayat" class="view">
-    <div id="riwayat-hof">
-      <p style="text-align:center;padding:20px;color:var(--muted);">Memuat data...</p>
+    <select id="riwayat-bulan" class="filter-select" style="width:100%;max-width:none;margin-bottom:20px;">
+      <option value="">Pilih bulan...</option>
+    </select>
+
+    <div id="riwayat-podium" class="podium">
+      <p style="text-align:center;padding:20px;color:var(--muted);width:100%;">Memuat data...</p>
     </div>
 
-    <div class="hasil-controls" style="margin-top:22px;">
-      <select id="riwayat-bulan" class="filter-select" style="flex:1;max-width:none;">
-        <option value="">Pilih bulan...</option>
-      </select>
-    </div>
-    <table>
-      <thead>
-        <tr><th>#</th><th>Nama</th><th>Main</th><th>M</th><th>S</th><th>K</th><th>GM</th><th>GK</th><th>SG</th><th>Poin</th></tr>
-      </thead>
-      <tbody id="riwayat-rows">
-        <tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Pilih bulan untuk lihat klasemen lengkapnya.</td></tr>
-      </tbody>
-    </table>
+    <div id="riwayat-stats" class="riwayat-stats"></div>
+
     <p class="status" id="status-riwayat"></p>
   </div>
 </div>
@@ -350,37 +388,18 @@
 
   var allMatches = [];
 
-  function renderHOF(table) {
-    var rows = table.rows
-      .map(function (r) { return r.c.map(function (cell) { return cell ? cell.v : null; }); })
-      .filter(function (r) { return r[0] && r[1]; }); // Bulan & Nama harus ada
-    rows.reverse(); // terbaru di atas
-
-    if (!rows.length) {
-      document.getElementById("riwayat-hof").innerHTML =
-        '<p style="text-align:center;padding:20px;color:var(--muted);">Belum ada riwayat juara.</p>';
-      return;
-    }
-
-    var html = rows.map(function (row) {
-      var bulan = row[0], juara = row[1], poin = row[9];
-      return (
-        '<div class="hof-row">' +
-        '<div class="hof-bulan">' + bulan + '</div>' +
-        '<div class="hof-juara">🏆 ' + juara + '</div>' +
-        '<div class="hof-poin">' + poin + ' pts</div>' +
-        '</div>'
-      );
-    }).join("");
-    document.getElementById("riwayat-hof").innerHTML = html;
-  }
-
   var riwayatKlasemenData = [];
 
   function renderRiwayatKlasemen(table) {
-    var rows = table.rows
-      .map(function (r) { return r.c.map(function (cell) { return cell ? cell.v : null; }); })
-      .filter(function (r) { return r[0] && r[2]; }); // Bulan & Nama harus ada
+    var rows = table.rows.map(function (r) {
+      return r.c.map(function (cell) {
+        if (!cell) return null;
+        // utamakan teks terformat (f) -- menghindari sel "Bulan" yang otomatis
+        // dikonversi Sheets jadi tipe tanggal lalu muncul sebagai "Date(2026,8,1)"
+        return (cell.f !== undefined && cell.f !== null) ? cell.f : cell.v;
+      });
+    }).filter(function (r) { return r[0] && r[2]; }); // Bulan & Nama harus ada
+
     riwayatKlasemenData = rows;
 
     var bulanUnik = [];
@@ -398,38 +417,59 @@
 
     if (bulanUnik.length) {
       select.value = bulanUnik[bulanUnik.length - 1]; // default: bulan terbaru
-      drawRiwayatTable(select.value);
+      renderPodium(select.value);
+    } else {
+      document.getElementById("riwayat-podium").innerHTML =
+        '<p style="text-align:center;padding:20px;color:var(--muted);width:100%;">Belum ada riwayat bulan sebelumnya.</p>';
     }
   }
 
-  function drawRiwayatTable(bulan) {
+  function podiumCard(cls, label, medal, row) {
+    if (!row) return "";
+    var nama = row[2], poin = row[10];
+    return (
+      '<div class="podium-card ' + cls + '">' +
+      '<div class="medal">' + medal + '</div>' +
+      '<div class="label">' + label + '</div>' +
+      '<div class="nama">' + nama + '</div>' +
+      '<div class="pts">' + poin + ' Pts</div>' +
+      '</div>'
+    );
+  }
+
+  function renderPodium(bulan) {
     var rowsBulan = riwayatKlasemenData.filter(function (r) { return r[0] === bulan; });
+    var podiumEl = document.getElementById("riwayat-podium");
+    var statsEl = document.getElementById("riwayat-stats");
+
     if (!bulan || !rowsBulan.length) {
-      document.getElementById("riwayat-rows").innerHTML =
-        '<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Pilih bulan untuk lihat klasemen lengkapnya.</td></tr>';
+      podiumEl.innerHTML = '<p style="text-align:center;padding:20px;color:var(--muted);width:100%;">Pilih bulan untuk lihat hasilnya.</p>';
+      statsEl.innerHTML = "";
       return;
     }
-    var html = rowsBulan.map(function (row) {
-      // row: Bulan, Peringkat, Nama, Main, M, S, K, GM, GK, SG, Poin
-      var sg = row[9];
-      var sgClass = sg > 0 ? "sg-pos" : (sg < 0 ? "sg-neg" : "");
-      var sgLabel = sg > 0 ? "+" + sg : sg;
-      return (
-        "<tr>" +
-        "<td class='rank'>" + row[1] + "</td>" +
-        "<td>" + row[2] + "</td>" +
-        "<td>" + row[3] + "</td>" +
-        "<td>" + row[4] + "</td>" +
-        "<td>" + row[5] + "</td>" +
-        "<td>" + row[6] + "</td>" +
-        "<td>" + row[7] + "</td>" +
-        "<td>" + row[8] + "</td>" +
-        "<td class='" + sgClass + "'>" + sgLabel + "</td>" +
-        "<td class='poin'>" + row[10] + "</td>" +
-        "</tr>"
-      );
-    }).join("");
-    document.getElementById("riwayat-rows").innerHTML = html;
+
+    // row: Bulan, Peringkat, Nama, Main, M, S, K, GM, GK, SG, Poin
+    var p1 = rowsBulan.find(function (r) { return Number(r[1]) === 1; });
+    var p2 = rowsBulan.find(function (r) { return Number(r[1]) === 2; });
+    var p3 = rowsBulan.find(function (r) { return Number(r[1]) === 3; });
+
+    podiumEl.innerHTML =
+      podiumCard("second", "Runner Up", "🥈", p2) +
+      podiumCard("first", "Juara 1", "🏆", p1) +
+      podiumCard("third", "Peringkat 3", "🥉", p3);
+
+    // statistik ringkas sebulan itu (hanya hitung pemain yang benar-benar main)
+    var aktif = rowsBulan.filter(function (r) { return Number(r[3]) > 0; });
+    var totalLaga = aktif.reduce(function (sum, r) { return sum + Number(r[3]); }, 0) / 2;
+    var totalGol = aktif.reduce(function (sum, r) { return sum + Number(r[7]); }, 0);
+    var bestAttack = aktif.reduce(function (best, r) { return (!best || Number(r[7]) > Number(best[7])) ? r : best; }, null);
+    var bestDefense = aktif.reduce(function (best, r) { return (!best || Number(r[8]) < Number(best[8])) ? r : best; }, null);
+
+    statsEl.innerHTML =
+      '<div class="riwayat-stat"><div class="stat-label">Total Laga</div><div class="stat-value">' + Math.round(totalLaga) + ' Match</div></div>' +
+      '<div class="riwayat-stat"><div class="stat-label">Total Gol</div><div class="stat-value">' + totalGol + ' Gol</div></div>' +
+      '<div class="riwayat-stat"><div class="stat-label">🔥 Best Attack</div><div class="stat-value gold">' + (bestAttack ? bestAttack[2] + " (" + bestAttack[7] + " GM)" : "-") + '</div></div>' +
+      '<div class="riwayat-stat"><div class="stat-label">🛡️ Best Defense</div><div class="stat-value gold">' + (bestDefense ? bestDefense[2] + " (" + bestDefense[8] + " GK)" : "-") + '</div></div>';
   }
 
   function renderHasil(table) {
@@ -506,7 +546,6 @@
     hasil: function () { loadSheetRange(GID_HASIL, RANGE_HASIL, renderHasil, "status-hasil"); },
     matrix: function () { loadSheetRange(GID_MATRIX, RANGE_MATRIX, renderMatrix, "status-matrix"); },
     riwayat: function () {
-      loadSheetRangeByName(SHEET_RIWAYAT_JUARA, RANGE_RIWAYAT_JUARA, renderHOF, "status-riwayat");
       loadSheetRangeByName(SHEET_RIWAYAT_KLASEMEN, RANGE_RIWAYAT_KLASEMEN, renderRiwayatKlasemen, "status-riwayat");
     }
   };
@@ -525,7 +564,7 @@
   });
 
   document.getElementById("riwayat-bulan").addEventListener("change", function (e) {
-    drawRiwayatTable(e.target.value);
+    renderPodium(e.target.value);
   });
 
   loadedViews.klasemen = true;

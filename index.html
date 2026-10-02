@@ -197,6 +197,30 @@
     .podium-card.first{order:-1;flex-basis:100%;max-width:none;}
     .riwayat-stat{min-width:45%;border-right:none;border-bottom:1px solid var(--pitch-line);padding:10px 8px;}
   }
+
+  /* --- riwayat: pembagian kasta --- */
+  .kasta-groups{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap;}
+  .kasta-col{
+    flex:1;min-width:160px;
+    background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:6px;
+    padding:14px;
+  }
+  .kasta-col-title{
+    font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;
+    display:flex;align-items:center;gap:6px;margin-bottom:10px;
+    padding-bottom:8px;border-bottom:1px solid var(--pitch-line);
+  }
+  .kasta-col.k1 .kasta-col-title{color:var(--gold);}
+  .kasta-col.k2 .kasta-col-title{color:#CBD5CE;}
+  .kasta-col.k3 .kasta-col-title{color:#C98A5C;}
+  .kasta-col-count{color:var(--muted);font-weight:400;font-size:11px;}
+  .kasta-pill{
+    display:inline-block;background:var(--pitch-dark);border:1px solid var(--pitch-line);
+    border-radius:999px;padding:4px 11px;margin:0 5px 5px 0;font-size:12px;color:var(--chalk);
+    transition:border-color 0.15s ease, transform 0.15s ease;
+  }
+  .kasta-pill:hover{border-color:var(--gold);transform:translateY(-2px);}
+  .kasta-col-empty{color:var(--muted);font-size:12px;font-style:italic;}
 </style>
 </head>
 <body>
@@ -276,6 +300,8 @@
 
     <div id="riwayat-stats" class="riwayat-stats"></div>
 
+    <div id="riwayat-kasta-groups" class="kasta-groups"></div>
+
     <p class="status" id="status-riwayat"></p>
   </div>
 </div>
@@ -291,10 +317,10 @@
   var RANGE_HASIL = "A2:H100";
   // tab di bawah ini dibuat OTOMATIS oleh skrip Apps Script saat reset bulanan pertama terjadi,
   // jadi belum punya gid tetap -- dipanggil pakai nama tab, bukan gid
-  var SHEET_RIWAYAT_JUARA = "Riwayat Juara";
-  var RANGE_RIWAYAT_JUARA = "A1:K300";
   var SHEET_RIWAYAT_KLASEMEN = "Riwayat Klasemen";
   var RANGE_RIWAYAT_KLASEMEN = "A1:K6000";
+  var SHEET_RIWAYAT_KASTA = "Riwayat Kasta";
+  var RANGE_RIWAYAT_KASTA = "A1:F6000";
   // ----------------------
 
   function gvizFetch_(urlExtra, callback, statusElId) {
@@ -418,6 +444,7 @@
     if (bulanUnik.length) {
       select.value = bulanUnik[bulanUnik.length - 1]; // default: bulan terbaru
       renderPodium(select.value);
+      renderKastaGroups(select.value);
     } else {
       document.getElementById("riwayat-podium").innerHTML =
         '<p style="text-align:center;padding:20px;color:var(--muted);width:100%;">Belum ada riwayat bulan sebelumnya.</p>';
@@ -435,6 +462,47 @@
       '<div class="pts">' + poin + ' Pts</div>' +
       '</div>'
     );
+  }
+
+  var riwayatKastaData = [];
+
+  function renderRiwayatKasta(table) {
+    var rows = table.rows.map(function (r) {
+      return r.c.map(function (cell) {
+        if (!cell) return null;
+        return (cell.f !== undefined && cell.f !== null) ? cell.f : cell.v;
+      });
+    }).filter(function (r) { return r[0] && r[1]; }); // Bulan & Nama harus ada
+    riwayatKastaData = rows;
+
+    // kalau bulan sudah terpilih duluan (fetch Riwayat Klasemen selesai lebih dulu), render ulang sekarang
+    var bulanTerpilih = document.getElementById("riwayat-bulan").value;
+    if (bulanTerpilih) renderKastaGroups(bulanTerpilih);
+  }
+
+  function renderKastaGroups(bulan) {
+    var el = document.getElementById("riwayat-kasta-groups");
+    var rowsBulan = riwayatKastaData.filter(function (r) { return r[0] === bulan; });
+    if (!bulan || !rowsBulan.length) {
+      el.innerHTML = "";
+      return;
+    }
+
+    // row: Bulan, Nama, Main, Menang, Win Rate, Kasta
+    function pills(kastaLabel) {
+      var names = rowsBulan.filter(function (r) { return r[5] === kastaLabel; }).map(function (r) { return r[1]; });
+      if (!names.length) return '<span class="kasta-col-empty">Belum ada</span>';
+      return names.map(function (n) { return '<span class="kasta-pill">' + n + '</span>'; }).join("");
+    }
+
+    function kastaCount(kastaLabel) {
+      return rowsBulan.filter(function (r) { return r[5] === kastaLabel; }).length;
+    }
+
+    el.innerHTML =
+      '<div class="kasta-col k1"><div class="kasta-col-title">🥇 Kasta 1 <span class="kasta-col-count">(' + kastaCount("Kasta 1") + ')</span></div>' + pills("Kasta 1") + '</div>' +
+      '<div class="kasta-col k2"><div class="kasta-col-title">🥈 Kasta 2 <span class="kasta-col-count">(' + kastaCount("Kasta 2") + ')</span></div>' + pills("Kasta 2") + '</div>' +
+      '<div class="kasta-col k3"><div class="kasta-col-title">🥉 Kasta 3 <span class="kasta-col-count">(' + kastaCount("Kasta 3") + ')</span></div>' + pills("Kasta 3") + '</div>';
   }
 
   function renderPodium(bulan) {
@@ -546,6 +614,7 @@
     hasil: function () { loadSheetRange(GID_HASIL, RANGE_HASIL, renderHasil, "status-hasil"); },
     matrix: function () { loadSheetRange(GID_MATRIX, RANGE_MATRIX, renderMatrix, "status-matrix"); },
     riwayat: function () {
+      loadSheetRangeByName(SHEET_RIWAYAT_KASTA, RANGE_RIWAYAT_KASTA, renderRiwayatKasta, "status-riwayat");
       loadSheetRangeByName(SHEET_RIWAYAT_KLASEMEN, RANGE_RIWAYAT_KLASEMEN, renderRiwayatKlasemen, "status-riwayat");
     }
   };
@@ -565,6 +634,7 @@
 
   document.getElementById("riwayat-bulan").addEventListener("change", function (e) {
     renderPodium(e.target.value);
+    renderKastaGroups(e.target.value);
   });
 
   loadedViews.klasemen = true;

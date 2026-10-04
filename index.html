@@ -324,6 +324,8 @@
   // ----------------------
 
   function gvizFetch_(urlExtra, callback, statusElId) {
+    // setiap request dapat nama fungsi callback sendiri yang unik (via responseHandler),
+    // supaya beberapa request yang jalan bersamaan tidak saling menimpa satu sama lain
     var callbackName = "__gvizCallback_" + Math.random().toString(36).slice(2);
     window[callbackName] = function (response) {
       try {
@@ -331,12 +333,13 @@
         document.getElementById(statusElId).textContent = "";
       } catch (err) {
         document.getElementById(statusElId).textContent = "Gagal memuat data: " + err.message;
+      } finally {
+        delete window[callbackName];
       }
     };
-    window.google = window.google || { visualization: { Query: {} } };
-    window.google.visualization.Query.setResponse = window[callbackName];
 
-    var url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:json&" + urlExtra;
+    var url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
+      "/gviz/tq?tqx=responseHandler:" + callbackName + "&" + urlExtra;
     var script = document.createElement("script");
     script.src = url;
     script.onerror = function () {
@@ -434,6 +437,7 @@
     });
 
     var select = document.getElementById("riwayat-bulan");
+    select.innerHTML = '<option value="">Pilih bulan...</option>'; // bersihkan dulu, cegah opsi dobel
     bulanUnik.forEach(function (bulan) {
       var opt = document.createElement("option");
       opt.value = bulan;

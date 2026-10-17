@@ -1287,8 +1287,12 @@
     else {
       var need = bestOther + 1 - lead.poin;
       var alive = rows.filter(function (r) { return !r.elim; }).length;
-      sum = "Masih <b>" + totalRem + " laga</b> tersisa, dan <b>" + alive + " pemain</b> masih berpeluang juara secara matematis. " +
-        "<b>" + escHtml_(lead.n) + "</b> butuh <b>" + need + " poin</b> lagi untuk memastikan gelar.";
+      var rival = order.slice(1).sort(function (a, b) { return b.maxP - a.maxP; })[0];
+      sum = "Masih <b>" + totalRem + " laga</b> tersisa, dan <b>" + alive + " pemain</b> masih berpeluang juara secara matematis. ";
+      if (M.left[lead.n] > 0)
+        sum += "<b>Magic number " + escHtml_(lead.n) + ": " + need + "</b>. Angka ini berkurang setiap kali " + escHtml_(lead.n) + " menambah poin atau pesaing kehilangan poin. Kalau sudah 0, gelar pasti.";
+      else
+        sum += "<b>" + escHtml_(lead.n) + "</b> sudah menyelesaikan semua lagainya (" + lead.poin + " poin), jadi tinggal menunggu pesaing. Gelar pasti kalau para pesaing, terutama <b>" + escHtml_(rival.n) + "</b> (masih bisa mencapai " + bestOther + " poin), kehilangan setidaknya <b>" + need + " poin</b> dari poin maksimal yang masih bisa mereka raih.";
     }
     var alive = rows.filter(function (r) { return !r.elim; });
     var out = rows.filter(function (r) { return r.elim; });

@@ -579,6 +579,13 @@
 .ch-btns .pri{background:var(--gold);color:#0B1F17;font-weight:600}
 .ch-btns .sec{background:transparent;color:var(--gold)}
 @media (prefers-reduced-motion:reduce){.ch-crown,.ch-eb,.ch-t,.ch-nm,.ch-pt,.ch-kasta,.ch-btns{animation:none;opacity:1}.ch-bar{animation:none;height:var(--h)}}
+
+.tk{overflow:hidden;white-space:nowrap;border:1px solid var(--pitch-line);background:var(--pitch-panel);border-radius:99px;margin:0 0 12px;padding:7px 0;display:none;position:relative}
+.tk-in{display:inline-block;padding-left:100%;animation:tkMove var(--tkd,60s) linear infinite;font-size:13px}
+.tk:hover .tk-in{animation-play-state:paused}
+.tk-in span{margin-right:42px}.tk-in b{color:var(--gold)}
+@keyframes tkMove{to{transform:translateX(-100%)}}
+@media (prefers-reduced-motion:reduce){.tk{overflow-x:auto}.tk-in{animation:none;padding-left:12px}}
 </style>
 </head>
 <body>
@@ -597,6 +604,8 @@
     <span id="announcement-text"></span>
     <button id="announcement-close" class="announcement-close" aria-label="Tutup">&times;</button>
   </div>
+
+  <div class="tk" id="ticker"><div class="tk-in" id="ticker-in"></div></div>
 
   <div class="tabs" id="tabs"><div class="tabs-in" id="tabs-in">
     <button class="tab-btn active" data-view="klasemen"><span class="ti">🏆</span>Klasemen</button>
@@ -1054,8 +1063,42 @@
       el.textContent = d > 0 ? "▲" + d : (d < 0 ? "▼" + (-d) : "");
     });
   }
+
+  function buildTicker_() {
+    var names = Object.keys(klasemenMap), ms = formData || [], it = [], i;
+    if (!names.length) return;
+    var rows = names.map(function (n) { return klasemenMap[n]; });
+    var lead = rows.slice().sort(function (a, b) { return Number(a[0]) - Number(b[0]); })[0];
+    if (lead && Number(lead[2]) > 0) it.push("\u{1F451} <b>" + escHtml_(stripBadge_(lead[1])) + "</b> memimpin klasemen dengan " + lead[9] + " poin");
+    var sc = rows.slice().sort(function (a, b) { return Number(b[6]) - Number(a[6]); })[0];
+    if (sc && Number(sc[6]) > 0) it.push("\u{1F945} Top skor: <b>" + escHtml_(stripBadge_(sc[1])) + "</b> (" + sc[6] + " gol)");
+    var df = rows.filter(function (r) { return Number(r[2]) >= 3; }).sort(function (a, b) { return Number(a[7]) / Number(a[2]) - Number(b[7]) / Number(b[2]); })[0];
+    if (df) it.push("\u{1F9F1} Pertahanan terbaik: <b>" + escHtml_(stripBadge_(df[1])) + "</b> (" + df[7] + " kebobolan)");
+    var best = null;
+    names.forEach(function (n) {
+      var l = matchesOf_(n), st = 0, k;
+      for (k = l.length - 1; k >= 0 && resultOf_(l[k], n) === "w"; k--) st++;
+      if (st >= 2 && (!best || st > best.st)) best = { n: n, st: st };
+    });
+    if (best) it.push("\u{1F525} <b>" + escHtml_(best.n) + "</b> sedang menang " + best.st + " laga beruntun");
+    var big = null;
+    ms.forEach(function (m) { var d = Math.abs(m.sh - m.sa); if (d >= 3 && (!big || d > big.d)) big = { m: m, d: d }; });
+    if (big) it.push("\u{1F4A5} Kemenangan terbesar: " + escHtml_(big.m.home) + " " + big.m.sh + "-" + big.m.sa + " " + escHtml_(big.m.away));
+    ms.slice(-3).reverse().forEach(function (m) { it.push("⚽ " + escHtml_(m.home) + " <b>" + m.sh + "-" + m.sa + "</b> " + escHtml_(m.away)); });
+    if (ms.length) it.push("\u{1F4CA} " + ms.length + " laga sudah dimainkan bulan ini");
+    var el = document.getElementById("ticker"), inn = document.getElementById("ticker-in");
+    if (!it.length) { el.style.display = "none"; return; }
+    var html = it.map(function (x) { return "<span>" + x + "</span>"; }).join("");
+    if (inn.getAttribute("data-h") !== html) {
+      inn.setAttribute("data-h", html); inn.innerHTML = html;
+      inn.style.setProperty("--tkd", Math.max(30, it.length * 9) + "s");
+    }
+    el.style.display = "block";
+  }
+
   function applyFormGuide() {
     applyRankMoves();
+    buildTicker_();
     if (typeof updateNewDots_ === "function") updateNewDots_();
     if (typeof mxPanel_ === "function" && mxData && mxPairSel) mxPanel_();
     var els = document.querySelectorAll(".form-guide");

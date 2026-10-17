@@ -422,6 +422,23 @@
 .lt-item .t u{text-decoration:none;color:var(--muted);margin:0 6px;font-size:11px}
 .lt-pill{font-family:'Oswald',sans-serif;font-size:12px;padding:2px 9px;border-radius:99px;border:1px solid var(--pitch-line);color:var(--muted)}
 .lt-pill.z{border-color:#C4573F;color:#E0715A}.lt-pill.h{border-color:var(--gold);color:var(--gold)}
+
+/* ---- Rivalitas ---- */
+.rv-sum{font-size:13px;color:var(--muted);margin:0 0 10px;line-height:1.5}
+.rv-sum b{color:var(--chalk)}
+.rv-card{background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .2s,transform .2s}
+.rv-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.rv-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rv-top b{font-size:14px}
+.rv-top .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rv-top .n:last-child{text-align:right}
+.rv-rec{font-family:'Oswald',sans-serif;color:var(--gold);font-size:18px;white-space:nowrap}
+.rv-bar{display:flex;height:6px;border-radius:99px;overflow:hidden;margin-top:9px;background:rgba(255,255,255,.06)}
+.rv-bar i{display:block;height:100%}
+.rv-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px}
+.rv-sub{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
+.ss-alltime{text-align:center;font-size:12px;color:var(--muted);margin-bottom:8px}
+.ss-alltime b{color:var(--gold);font-family:'Oswald',sans-serif;font-size:15px;font-weight:500}
 </style>
 </head>
 <body>
@@ -530,6 +547,8 @@
   // tab di bawah ini dibuat OTOMATIS oleh skrip Apps Script saat reset bulanan pertama terjadi,
   // jadi belum punya gid tetap -- dipanggil pakai nama tab, bukan gid
   // Tab "Pengumuman" (buat sendiri di sheet: satu tab, isi teks pengumuman di sel A1)
+  var SHEET_RIWAYAT_PERTANDINGAN = "Riwayat Pertandingan";
+  var RANGE_RIWAYAT_PERTANDINGAN = "A1:E20000";
   var SHEET_PENGUMUMAN = "Pengumuman";
   var RANGE_PENGUMUMAN = "A1:A1";
   var SHEET_RIWAYAT_KLASEMEN = "Riwayat Klasemen";
@@ -892,7 +911,7 @@
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeProfile(); });
 
   var STAT_MIN_MAIN = 3; // minimal laga untuk penghargaan/peringkat berbasis rata-rata
-  var statRemFilter = "", statSig = null, statBoard = "poin", statAnimated = false, statData = null, statCtx = null, statHidden = null, statCmpA = null, statCmpB = null;
+  var statArsip = [], statArsipOk = false, statRemFilter = "", statSig = null, statBoard = "poin", statAnimated = false, statData = null, statCtx = null, statHidden = null, statCmpA = null, statCmpB = null;
   function escHtml_(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/'/g, "&#39;"); }
   function f2_(x) { return (Math.round(x * 100) / 100).toString(); }
 
@@ -1013,6 +1032,7 @@
     h += "<div class='ss-sec'>Laga Tersisa</div><div id='ss-rem'></div>";
     h += "<div class='ss-sec'>Balapan Poin</div><div id='ss-chart'></div>";
     h += "<div class='ss-sec'>Adu Pemain</div><div id='ss-cmp'></div>";
+    h += "<div class='ss-sec'>Rivalitas Sepanjang Masa</div><div id='ss-riv'></div>";
 
     // ---- komposisi hasil & distribusi gol ----
     var mnang = ms.length - seri;
@@ -1058,6 +1078,7 @@
     drawRem_();
     drawRace_();
     drawCmp_();
+    drawRivalry_();
     finishStat_();
   }
 
@@ -1331,6 +1352,78 @@
   }
 
 
+  // ---------- Arsip pertandingan & rivalitas ----------
+  function loadArsipPertandingan_() {
+    loadSheetRangeByName(SHEET_RIWAYAT_PERTANDINGAN, RANGE_RIWAYAT_PERTANDINGAN, function (table) {
+      var rows = table.rows.map(function (r) {
+        return r.c.map(function (cell) { return cell ? (cell.f != null ? cell.f : cell.v) : null; });
+      });
+      // pastikan ini memang tab arsip (sheet yang tidak ada bisa membuat gviz mengembalikan tab lain)
+      var head = (table.cols[0] && table.cols[0].label) || (rows[0] && rows[0][0]);
+      if (String(head).trim() !== "Bulan") { statArsip = []; statArsipOk = false; return; }
+      statArsip = rows.filter(function (r) { return r[1] && r[2] && r[3] !== null && r[4] !== null && !isNaN(Number(r[3])) && !isNaN(Number(r[4])); })
+        .map(function (r) { return { bulan: String(r[0]), home: stripBadge_(r[1]), away: stripBadge_(r[2]), sh: Number(r[3]), sa: Number(r[4]) }; });
+      statArsipOk = true;
+      if (statCtx) { drawCmp_(); drawRivalry_(); }
+    }, null);
+  }
+
+  function allMatches_() { return statArsip.concat(statCtx ? statCtx.ms : []); }
+
+  function h2hAll_(a, b) {
+    var r = { n: 0, wa: 0, wb: 0, d: 0, ga: 0, gb: 0 };
+    allMatches_().forEach(function (m) {
+      if (!((m.home === a && m.away === b) || (m.home === b && m.away === a))) return;
+      var sa = m.home === a ? m.sh : m.sa, sb = m.home === a ? m.sa : m.sh;
+      r.n++; r.ga += sa; r.gb += sb;
+      if (sa > sb) r.wa++; else if (sb > sa) r.wb++; else r.d++;
+    });
+    return r;
+  }
+
+  function drawRivalry_() {
+    var el = document.getElementById("ss-riv");
+    if (!el || !statCtx) return;
+    var all = allMatches_();
+    var bulan = {}; statArsip.forEach(function (m) { bulan[m.bulan] = 1; });
+    var nb = Object.keys(bulan).length;
+    var pairs = {};
+    all.forEach(function (m) {
+      var a = m.home < m.away ? m.home : m.away, b = m.home < m.away ? m.away : m.home, k = a + "|" + b;
+      var o = pairs[k] || (pairs[k] = { a: a, b: b, n: 0, wa: 0, wb: 0, d: 0, ga: 0, gb: 0 });
+      var sa = m.home === a ? m.sh : m.sa, sb = m.home === a ? m.sa : m.sh;
+      o.n++; o.ga += sa; o.gb += sb;
+      if (sa > sb) o.wa++; else if (sb > sa) o.wb++; else o.d++;
+    });
+    var list = Object.keys(pairs).map(function (k) { return pairs[k]; });
+
+    var info = nb
+      ? "Menghitung <b>" + all.length + " laga</b> dari <b>" + (nb + 1) + " season</b> (" + nb + " season arsip + season berjalan)."
+      : "Arsip rivalitas mulai terkumpul sejak reset bulanan berikutnya. Untuk sekarang yang dihitung baru season berjalan (<b>" + all.length + " laga</b>).";
+
+    function card(r, flip) {
+      var a = r.a, b = r.b, wa = r.wa, wb = r.wb;
+      if (flip) { a = r.b; b = r.a; wa = r.wb; wb = r.wa; }
+      var ga = flip ? r.gb : r.ga, gb = flip ? r.ga : r.gb;
+      return "<div class='rv-card' data-p='" + escHtml_(a) + "'><div class='rv-top'><b class='n'>" + escHtml_(a) + "</b><span class='rv-rec'>" + wa + " &ndash; " + r.d + " &ndash; " + wb + "</span><b class='n'>" + escHtml_(b) + "</b></div>" +
+        "<div class='rv-bar'><i style='width:" + (wa / r.n * 100) + "%;background:#4ADE80'></i><i style='width:" + (r.d / r.n * 100) + "%;background:var(--gold)'></i><i style='width:" + (wb / r.n * 100) + "%;background:#C4573F'></i></div>" +
+        "<div class='rv-meta'><span>" + r.n + " pertemuan</span><span>gol " + ga + "-" + gb + "</span></div></div>";
+    }
+
+    var MINP = nb ? 4 : 2;
+    var hot = list.filter(function (r) { return r.n >= MINP; })
+      .sort(function (x, y) { return (y.n - Math.abs(y.wa - y.wb)) - (x.n - Math.abs(x.wa - x.wb)) || (y.n - x.n); }).slice(0, 5);
+    var dom = list.filter(function (r) { return r.n >= MINP && Math.max(r.wa, r.wb) / r.n >= 0.6 && r.wa !== r.wb; })
+      .sort(function (x, y) { return (Math.max(y.wa, y.wb) / y.n - Math.max(x.wa, x.wb) / x.n) || (y.n - x.n); }).slice(0, 3);
+
+    var h = "<p class='rv-sum'>" + info + " Format: menang &ndash; seri &ndash; kalah dari sudut pandang pemain di kiri.</p>";
+    if (!list.length) { el.innerHTML = h; return; }
+    h += "<div class='rv-sub'>\u{1F525} Rivalitas Terpanas</div>" + hot.map(function (r) { return card(r, false); }).join("");
+    if (dom.length) h += "<div class='rv-sub'>\u{1F451} Sang Penguasa</div>" + dom.map(function (r) { return card(r, r.wb > r.wa); }).join("");
+    h += "<p class='st-note'>Rivalitas terpanas = pertemuan banyak dengan rekor paling seimbang. Sang Penguasa = satu pemain menang minimal 60% dari pertemuan (minimal " + MINP + " laga). Ketuk kartu untuk membuka profil. Untuk rekor dua pemain tertentu, lihat bagian Adu Pemain di atas.</p>";
+    el.innerHTML = h;
+  }
+
   function drawCmp_() {
     var el = document.getElementById("ss-cmp");
     if (!el || !statCtx) return;
@@ -1365,8 +1458,10 @@
       hm.map(function (m) { return "<div class='ss-feed'><span class='t a'>" + escHtml_(m.home) + "</span><b>" + m.sh + " - " + m.sa + "</b><span class='t'>" + escHtml_(m.away) + "</span></div>"; }).join("") :
       "<div class='st-note' style='text-align:center'>Belum pernah bertemu di season ini.</div>") + "</div>";
 
+    var at = h2hAll_(A.n, Bp.n);
+    var atHtml = at.n ? "<div class='ss-alltime'>Sepanjang masa (" + at.n + " laga): <b>" + at.wa + "</b> &ndash; " + at.d + " &ndash; <b>" + at.wb + "</b> &middot; gol " + at.ga + "-" + at.gb + "</div>" : "";
     el.innerHTML = "<div class='ss-sels'><select class='ss-sel' data-side='a'>" + opts(statCmpA) + "</select><span>VS</span><select class='ss-sel' data-side='b'>" + opts(statCmpB) + "</select></div>" +
-      "<div class='ss-vs'><div class='ss-vs-h'><div><b>" + escHtml_(A.n) + "</b><small>" + A.poin + " poin</small></div><div><b>" + escHtml_(Bp.n) + "</b><small>" + Bp.poin + " poin</small></div></div>" + rowsHtml + h2h + "</div>";
+      "<div class='ss-vs'><div class='ss-vs-h'><div><b>" + escHtml_(A.n) + "</b><small>" + A.poin + " poin</small></div><div><b>" + escHtml_(Bp.n) + "</b><small>" + Bp.poin + " poin</small></div></div>" + rowsHtml + atHtml + h2h + "</div>";
   }
 
   (function () {
@@ -1467,7 +1562,10 @@
   var loaders = {
     hasil: function () { loadSheetRange(GID_HASIL, RANGE_HASIL, renderHasil, "status-hasil"); },
     matrix: function () { loadSheetRange(GID_MATRIX, RANGE_MATRIX, renderMatrix, "status-matrix"); },
-    statistik: function () { loadSheetRange(GID_HASIL, RANGE_HASIL, renderStatistik, "status-statistik"); },
+    statistik: function () {
+      loadSheetRange(GID_HASIL, RANGE_HASIL, renderStatistik, "status-statistik");
+      loadArsipPertandingan_();
+    },
     riwayat: function () {
       loadSheetRangeByName(SHEET_RIWAYAT_KASTA, RANGE_RIWAYAT_KASTA, renderRiwayatKasta, "status-riwayat");
       loadSheetRangeByName(SHEET_RIWAYAT_KLASEMEN, RANGE_RIWAYAT_KLASEMEN, renderRiwayatKlasemen, "status-riwayat");

@@ -513,6 +513,72 @@
 .ss-new .ln b{color:var(--gold)}
 .ss-new .big{font-family:'Oswald',sans-serif;font-size:18px;margin-bottom:4px}
 .ss-up{color:#4ADE80}.ss-dn{color:#E0715A}
+
+/* ---- skeleton & retry ---- */
+@keyframes skShim{0%{background-position:-200px 0}100%{background-position:200px 0}}
+.sk-line,.sk-card,.sk-tile,.sk-hero{border-radius:8px;background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.10) 50%,rgba(255,255,255,.04) 75%);background-size:400px 100%;animation:skShim 1.3s linear infinite}
+.sk-line{height:34px}.sk-card{height:54px;margin-bottom:8px}.sk-tile{height:78px}.sk-hero{height:150px;border-radius:14px;margin-top:16px}
+.sk-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+@media(max-width:520px){.sk-tiles{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion:reduce){.sk-line,.sk-card,.sk-tile,.sk-hero{animation:none}}
+.retry-btn{font-family:'Oswald',sans-serif;font-size:13px;padding:5px 14px;border-radius:99px;border:1px solid var(--gold);background:rgba(232,179,61,.12);color:var(--gold);cursor:pointer;margin-left:6px}
+/* ---- avatar & profil v2 ---- */
+.av{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;font-family:'Oswald',sans-serif;color:#0B1F17;font-weight:600;flex-shrink:0}
+.pf-head{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.pf-kasta{display:inline-block;font-size:11px;padding:2px 10px;border-radius:99px;border:1px solid var(--gold);color:var(--gold);margin-left:8px;vertical-align:middle;font-family:'Inter',sans-serif;font-weight:500}
+.pf-cards{display:grid;grid-template-columns:1fr;gap:8px}
+.pf-hl{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);border-radius:10px;padding:9px 12px}
+.pf-hl .ic{font-size:20px}
+.pf-hl small{display:block;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.pf-hl b{font-size:14px}
+.pf-hl em{font-style:normal;margin-left:auto;font-family:'Oswald',sans-serif;color:var(--gold);font-size:15px;white-space:nowrap}
+.pf-spark{background:rgba(255,255,255,.04);border-radius:10px;padding:8px 6px 4px}
+.pf-share{width:100%;margin-top:14px;padding:10px;border-radius:99px;border:1px solid #25D366;background:rgba(37,211,102,.1);color:#4ADE80;cursor:pointer;font-size:13px}
+/* ---- hall of fame ---- */
+.rw-toggle{display:inline-flex;border:1px solid var(--pitch-line);border-radius:99px;overflow:hidden;margin-bottom:14px}
+.rw-toggle button{font-family:'Oswald',sans-serif;font-size:13px;padding:6px 18px;background:transparent;border:0;color:var(--muted);cursor:pointer}
+.rw-toggle button.on{background:var(--gold);color:#0B1F17;font-weight:600}
+.hof-row{display:flex;align-items:center;gap:10px;background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.hof-row.top{border-color:var(--gold);background:linear-gradient(135deg,rgba(232,179,61,.16),var(--pitch-panel))}
+.hof-rk{width:22px;text-align:center;font-family:'Oswald',sans-serif;color:var(--muted)}
+.hof-mid{flex:1;min-width:0}
+.hof-mid b{display:block;font-size:15px}
+.hof-mid small{font-size:11px;color:var(--muted)}
+.hof-tr{font-size:15px;letter-spacing:1px;white-space:nowrap}
+.hof-tr i{font-style:normal;font-family:'Oswald',sans-serif;color:var(--gold);font-size:16px}
+.hof-rec{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.hof-tl{overflow-x:auto;overflow-y:hidden;background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:12px;padding:10px 12px}
+.hof-tl table{width:auto;margin:0;border-collapse:separate;border-spacing:3px}
+.hof-tl th{font-size:10px;font-weight:500;color:var(--muted);text-align:center;padding:0 2px 4px;white-space:nowrap}
+.hof-tl td.n{font-size:12px;font-weight:600;padding-right:8px;white-space:nowrap;text-align:left}
+.hof-tl td.k{width:26px;height:22px;border-radius:5px;text-align:center;font-size:11px;font-family:'Oswald',sans-serif;color:#0B1F17}
+.hof-tl td.k1{background:#E8B33D}.hof-tl td.k2{background:#B8C2CC}.hof-tl td.k3{background:#C98A5A}.hof-tl td.k0{background:rgba(255,255,255,.05)}
+.hof-champ{display:flex;justify-content:space-between;padding:8px 2px;border-bottom:1px dashed var(--pitch-line);font-size:13px}
+.hof-champ b{color:var(--gold)}
+/* ---- layar juara ---- */
+.ch-overlay{position:fixed;inset:0;z-index:2000;background:radial-gradient(circle at 50% 30%,rgba(232,179,61,.22),rgba(5,16,11,.96) 70%);display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto}
+.ch-overlay canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+.ch-card{position:relative;max-width:420px;width:100%;text-align:center;color:var(--chalk)}
+.ch-eb{font-family:'Oswald',sans-serif;letter-spacing:3px;color:var(--gold);font-size:13px;animation:ssUp .8s ease both}
+.ch-t{font-family:'Oswald',sans-serif;font-size:34px;font-weight:700;line-height:1.1;margin:6px 0 4px;animation:ssUp .8s .2s ease both}
+.ch-crown{font-size:56px;animation:chBounce 1.6s ease-in-out infinite}
+@keyframes chBounce{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-8px) rotate(4deg)}}
+.ch-pod{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:22px 0 14px;height:190px}
+.ch-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;min-width:0}
+.ch-nm{font-weight:700;font-size:15px;margin-bottom:2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:0;animation:ssUp .6s ease forwards}
+.ch-pt{font-family:'Oswald',sans-serif;color:var(--gold);font-size:13px;margin-bottom:6px;opacity:0;animation:ssUp .6s ease forwards}
+.ch-bar{width:100%;border-radius:10px 10px 0 0;display:flex;align-items:flex-start;justify-content:center;font-size:26px;padding-top:6px;height:0;animation:chRise .9s cubic-bezier(.2,.8,.2,1) forwards}
+.ch-col.p1 .ch-bar{background:linear-gradient(180deg,#F5CE6B,#9A7416);--h:130px}
+.ch-col.p2 .ch-bar{background:linear-gradient(180deg,#D5DCE3,#6F7C88);--h:94px}
+.ch-col.p3 .ch-bar{background:linear-gradient(180deg,#DDA06B,#7C4E28);--h:70px}
+@keyframes chRise{to{height:var(--h)}}
+.ch-kasta{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px;animation:ssUp .8s 1.6s ease both}
+.ch-kasta b{color:var(--chalk)}
+.ch-btns{display:flex;gap:10px;justify-content:center;animation:ssUp .8s 1.8s ease both}
+.ch-btns button{font-family:'Oswald',sans-serif;font-size:14px;padding:9px 20px;border-radius:99px;cursor:pointer;border:1px solid var(--gold)}
+.ch-btns .pri{background:var(--gold);color:#0B1F17;font-weight:600}
+.ch-btns .sec{background:transparent;color:var(--gold)}
+@media (prefers-reduced-motion:reduce){.ch-crown,.ch-eb,.ch-t,.ch-nm,.ch-pt,.ch-kasta,.ch-btns{animation:none;opacity:1}.ch-bar{animation:none;height:var(--h)}}
 </style>
 </head>
 <body>
@@ -547,7 +613,7 @@
         <tr><th>#</th><th>Nama</th><th>Main</th><th>M</th><th>S</th><th>K</th><th>GM</th><th>GK</th><th>SG</th><th>Poin</th></tr>
       </thead>
       <tbody id="rows">
-        <tr><td colspan="10" style="text-align:center;padding:20px;color:var(--muted);">Memuat data...</td></tr>
+        <tr><td colspan="10" style="padding:6px 0;"><div class="sk-line" style="margin-bottom:8px"></div><div class="sk-line" style="margin-bottom:8px"></div><div class="sk-line" style="margin-bottom:8px"></div><div class="sk-line" style="margin-bottom:8px"></div><div class="sk-line" style="margin-bottom:8px"></div><div class="sk-line" style="margin-bottom:8px"></div><div class="sk-line" style="margin-bottom:8px"></div><div class="sk-line" style="margin-bottom:8px"></div></td></tr>
       </tbody>
     </table>
     <div class="legend">
@@ -564,9 +630,7 @@
         <option value="">Semua Pemain</option>
       </select>
     </div>
-    <div id="hasil-list">
-      <p style="text-align:center;padding:20px;color:var(--muted);">Memuat data...</p>
-    </div>
+    <div id="hasil-list"><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div></div>
     <p class="status" id="status-hasil"></p>
   </div>
 
@@ -600,11 +664,14 @@
   </div>
 
   <div id="view-statistik" class="view">
-    <div id="statistik-body"><p style="text-align:center;padding:20px;color:var(--muted);">Memuat data...</p></div>
+    <div id="statistik-body"><div class="sk-hero"></div><div class="sk-tiles"><div class="sk-tile"></div><div class="sk-tile"></div><div class="sk-tile"></div><div class="sk-tile"></div></div></div>
     <p class="status" id="status-statistik"></p>
   </div>
 
   <div id="view-riwayat" class="view">
+    <div class="rw-toggle"><button class="on" data-rw="bulan">Per Bulan</button><button data-rw="hof">🏛️ Hall of Fame</button></div>
+    <div id="rw-hof" style="display:none"></div>
+    <div id="rw-bulan">
     <select id="riwayat-bulan" class="filter-select" style="width:100%;max-width:none;margin-bottom:20px;">
       <option value="">Pilih bulan...</option>
     </select>
@@ -616,11 +683,13 @@
     <div id="riwayat-stats" class="riwayat-stats"></div>
 
     <div id="riwayat-kasta-groups" class="kasta-groups"></div>
+    </div>
 
     <p class="status" id="status-riwayat"></p>
   </div>
 </div>
 
+<div id="champ-modal" class="ch-overlay" style="display:none"></div>
 <div id="player-modal" class="modal-overlay" style="display:none;"><div class="modal-card"><button id="modal-close" class="modal-close" aria-label="Tutup">&times;</button><div id="modal-content"></div></div></div>
 <script>
   // ---- KONFIGURASI ----
@@ -645,31 +714,48 @@
   // ----------------------
 
   function gvizFetch_(urlExtra, callback, statusElId) {
-    // setiap request dapat nama fungsi callback sendiri yang unik (via responseHandler),
-    // supaya beberapa request yang jalan bersamaan tidak saling menimpa satu sama lain
+    // 1) tampilkan data tersimpan (kalau ada) supaya halaman langsung terisi,
+    // 2) ambil data terbaru dari Google Sheet lalu perbarui diam-diam.
+    // Tiap request punya nama callback unik (responseHandler) agar request paralel tidak saling menimpa.
     var statusEl = statusElId ? document.getElementById(statusElId) : null;
+    var ckey = "shb_c1_" + urlExtra, hadCache = false, done = false, script = null, timer = null;
+    try {
+      var raw = localStorage.getItem(ckey);
+      if (raw) {
+        var obj = JSON.parse(raw);
+        if (obj && obj.table) { hadCache = true; try { callback(obj.table); } catch (e0) { hadCache = false; } }
+      }
+    } catch (e1) {}
+
     var callbackName = "__gvizCallback_" + Math.random().toString(36).slice(2);
+    function showError() {
+      if (done || hadCache || !statusEl) return;
+      statusEl.innerHTML = "Data belum bisa dimuat. Periksa koneksi, lalu <button class='retry-btn'>Coba lagi</button>";
+      var bt = statusEl.querySelector(".retry-btn");
+      if (bt) bt.onclick = function () { statusEl.textContent = ""; gvizFetch_(urlExtra, callback, statusElId); };
+    }
     window[callbackName] = function (response) {
+      done = true;
+      clearTimeout(timer);
       try {
+        if (!response || !response.table) throw new Error("data kosong");
         callback(response.table);
         if (statusEl) statusEl.textContent = "";
+        try { var str = JSON.stringify({ t: Date.now(), table: response.table }); if (str.length < 600000) localStorage.setItem(ckey, str); } catch (e2) {}
       } catch (err) {
-        if (statusEl) statusEl.textContent = "Gagal memuat data: " + err.message;
+        if (statusEl && !hadCache) statusEl.textContent = "Gagal memuat data: " + err.message;
       } finally {
         delete window[callbackName];
         if (script && script.parentNode) script.parentNode.removeChild(script);
       }
     };
 
-    var script;
     var url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID +
       "/gviz/tq?tqx=responseHandler:" + callbackName + "&" + urlExtra;
     script = document.createElement("script");
     script.src = url;
-    script.onerror = function () {
-      if (statusEl) statusEl.textContent =
-        "Gagal memuat data. Pastikan sheet sudah dibagikan sebagai \"Anyone with the link\".";
-    };
+    script.onerror = showError;
+    timer = setTimeout(showError, 15000);
     document.body.appendChild(script);
   }
 
@@ -684,7 +770,7 @@
   function loadPengumuman() {
     loadSheetRangeByName(SHEET_PENGUMUMAN, RANGE_PENGUMUMAN, function (table) {
       var teks = (table.rows[0] && table.rows[0].c[0]) ? table.rows[0].c[0].v : "";
-      if (!teks) return; // kosong -> tidak ditampilkan
+      if (!teks) { document.getElementById("announcement-banner").style.display = "none"; return; } // kosong -> sembunyikan
 
       var dismissKey = "shb_announcement_dismissed";
       if (localStorage.getItem(dismissKey) === teks) return; // sudah pernah ditutup teks yang sama
@@ -815,6 +901,7 @@
       document.getElementById("riwayat-podium").innerHTML =
         '<p style="text-align:center;padding:20px;color:var(--muted);width:100%;">Belum ada riwayat bulan sebelumnya.</p>';
     }
+    onRiwayatReady_();
   }
 
   function podiumCard(cls, label, medal, row) {
@@ -844,6 +931,7 @@
     // kalau bulan sudah terpilih duluan (fetch Riwayat Klasemen selesai lebih dulu), render ulang sekarang
     var bulanTerpilih = document.getElementById("riwayat-bulan").value;
     if (bulanTerpilih) renderKastaGroups(bulanTerpilih);
+    onRiwayatReady_();
   }
 
   function renderKastaGroups(bulan) {
@@ -977,34 +1065,125 @@
       el.innerHTML = last.map(function (m) { return dotHtml_(resultOf_(m, nama)); }).join("");
     });
   }
+  var profOpen = null, riwayatRequested = false, arsipRequested = false;
+
+  function avatarHtml_(name, size) {
+    var hsh = 0, i;
+    for (i = 0; i < name.length; i++) hsh = (hsh * 31 + name.charCodeAt(i)) % 360;
+    return "<span class='av' style='width:" + size + "px;height:" + size + "px;font-size:" + Math.round(size * 0.38) + "px;background:linear-gradient(135deg,hsl(" + hsh + ",70%,62%),hsl(" + ((hsh + 40) % 360) + ",65%,46%))'>" + escHtml_(name.slice(0, 2).toUpperCase()) + "</span>";
+  }
+
+  function kastaOf_(rawName) {
+    var n = String(rawName || "");
+    if (n.indexOf("\u{1F947}") === 0) return "Kasta 1";
+    if (n.indexOf("\u{1F948}") === 0) return "Kasta 2";
+    if (n.indexOf("\u{1F949}") === 0) return "Kasta 3";
+    if (n.indexOf("\u{1F195}") === 0) return "Pemain baru";
+    return "";
+  }
+
+  function ensureRiwayat_() {
+    if (riwayatRequested) return;
+    riwayatRequested = true;
+    loadSheetRangeByName(SHEET_RIWAYAT_KASTA, RANGE_RIWAYAT_KASTA, renderRiwayatKasta, null);
+    loadSheetRangeByName(SHEET_RIWAYAT_KLASEMEN, RANGE_RIWAYAT_KLASEMEN, renderRiwayatKlasemen, null);
+  }
+  function ensureArsip_() {
+    if (arsipRequested) return;
+    arsipRequested = true;
+    loadArsipPertandingan_();
+  }
+
+  // lawan -> rekor (arsip + season berjalan)
+  function oppStats_(nama) {
+    var all = statArsip.concat(formData || []), o = {};
+    all.forEach(function (m) {
+      if (m.home !== nama && m.away !== nama) return;
+      var opp = m.home === nama ? m.away : m.home, gf = m.home === nama ? m.sh : m.sa, ga = m.home === nama ? m.sa : m.sh;
+      var r = o[opp] || (o[opp] = { n: opp, w: 0, d: 0, l: 0, gf: 0, ga: 0, t: 0 });
+      r.t++; r.gf += gf; r.ga += ga;
+      if (gf > ga) r.w++; else if (gf < ga) r.l++; else r.d++;
+    });
+    return Object.keys(o).map(function (k) { return o[k]; });
+  }
+
+  function rankSparkline_(nama, nowRank) {
+    var pts = riwayatKlasemenData.filter(function (r) { return r[2] === nama && Number(r[3]) > 0; })
+      .map(function (r) { return { b: String(r[0]), k: Number(r[1]) }; });
+    if (nowRank) pts.push({ b: "Kini", k: Number(nowRank) });
+    if (pts.length < 2) return "<div class='pf-empty'>" + (riwayatKlasemenData.length ? "Belum cukup riwayat bulan sebelumnya." : "Memuat riwayat...") + "</div>";
+    var maxK = Math.max.apply(null, pts.map(function (p) { return p.k; }).concat([4]));
+    var W = 340, H = 96, L = 14, R = 14, T = 16, B = 22, n = pts.length;
+    function x(i) { return L + (n > 1 ? i / (n - 1) : 0) * (W - L - R); }
+    function y(k) { return T + (k - 1) / (maxK - 1) * (H - T - B); }
+    var line = pts.map(function (p, i) { return x(i).toFixed(1) + "," + y(p.k).toFixed(1); }).join(" ");
+    var svg = "<svg viewBox='0 0 " + W + " " + H + "' style='width:100%;display:block'><polyline fill='none' stroke='#E8B33D' stroke-width='2.4' stroke-linejoin='round' points='" + line + "'/>";
+    pts.forEach(function (p, i) {
+      svg += "<circle cx='" + x(i).toFixed(1) + "' cy='" + y(p.k).toFixed(1) + "' r='4' fill='" + (p.k === 1 ? "#E8B33D" : "#12301F") + "' stroke='#E8B33D' stroke-width='2'/>" +
+        "<text x='" + x(i).toFixed(1) + "' y='" + (y(p.k) - 8).toFixed(1) + "' fill='#F3F1E7' font-size='10' text-anchor='middle'>#" + p.k + "</text>" +
+        "<text x='" + x(i).toFixed(1) + "' y='" + (H - 6) + "' fill='#8FAF9B' font-size='9' text-anchor='middle'>" + escHtml_(p.b.split(" ")[0].slice(0, 3)) + "</text>";
+    });
+    return "<div class='pf-spark'>" + svg + "</svg></div>";
+  }
+
   function openProfile(nama) {
     var row = klasemenMap[nama];
     if (!row) return;
+    profOpen = nama;
+    ensureRiwayat_(); ensureArsip_();
     var ms = matchesOf_(nama);
-    var h = "<div class='pf-name'>" + nama + "</div><div class='pf-sub'>Peringkat #" + row[0] + " &middot; " + row[9] + " poin</div>";
+    var kasta = kastaOf_(row[1]);
+    var h = "<div class='pf-head'>" + avatarHtml_(nama, 58) + "<div><div class='pf-name'>" + escHtml_(nama) + (kasta ? "<span class='pf-kasta'>" + kasta + "</span>" : "") + "</div>" +
+      "<div class='pf-sub' style='margin:2px 0 0'>Peringkat #" + row[0] + " &middot; " + row[9] + " poin</div></div></div>";
+    var last5 = ms.slice(-5);
+    if (last5.length) h += "<div class='form-guide' style='margin:0 0 12px'>" + last5.map(function (m) { return dotHtml_(resultOf_(m, nama)); }).join("") + "</div>";
     h += "<div class='pf-stats'>" +
       [["Main", row[2]], ["Menang", row[3]], ["Seri", row[4]], ["Kalah", row[5]], ["GM", row[6]], ["GK", row[7]], ["SG", row[8]], ["WR", row[2] ? Math.round(row[3] / row[2] * 100) + "%" : "0%"]]
       .map(function (x) { return "<div class='pf-stat'><b>" + x[1] + "</b>" + x[0] + "</div>"; }).join("") + "</div>";
+
+    // sorotan pribadi (sepanjang masa: arsip + season ini)
+    var os = oppStats_(nama), hl = "";
+    function card(ic, label, r, val) { return "<div class='pf-hl'><span class='ic'>" + ic + "</span><div><small>" + label + "</small><b>" + escHtml_(r.n) + "</b></div><em>" + val + "</em></div>"; }
+    if (os.length) {
+      var rival = os.filter(function (r) { return r.t >= 2; }).sort(function (a, b) { return (b.t - Math.abs(b.w - b.l)) - (a.t - Math.abs(a.w - a.l)) || b.t - a.t; })[0];
+      var vict = os.filter(function (r) { return r.t >= 2 && r.w > r.l; }).sort(function (a, b) { return ((b.w - b.l) / b.t) - ((a.w - a.l) / a.t) || b.t - a.t; })[0];
+      var nem = os.filter(function (r) { return r.t >= 2 && r.l > r.w; }).sort(function (a, b) { return ((b.l - b.w) / b.t) - ((a.l - a.w) / a.t) || b.t - a.t; })[0];
+      if (rival) hl += card("\u{1F525}", "Rival terbesar", rival, rival.w + "-" + rival.d + "-" + rival.l);
+      if (vict) hl += card("\u{1F608}", "Korban favorit", vict, vict.w + "-" + vict.d + "-" + vict.l);
+      if (nem) hl += card("\u{1F631}", "Mimpi buruk", nem, nem.w + "-" + nem.d + "-" + nem.l);
+    }
+    if (hl) h += "<div class='pf-title'>Sorotan Pribadi <span style='text-transform:none;letter-spacing:0;opacity:.6'>(sepanjang masa)</span></div><div class='pf-cards'>" + hl + "</div>";
+
+    h += "<div class='pf-title'>Perjalanan Peringkat</div>" + rankSparkline_(nama, row[0]);
+
     h += "<div class='pf-title'>5 Pertandingan Terakhir</div>";
     var last = ms.slice(-5).reverse();
     h += last.length ? last.map(function (m) {
-      return "<div class='pf-match " + resultOf_(m, nama) + "'><span>" + m.home + "</span><b>" + m.sh + " - " + m.sa + "</b><span>" + m.away + "</span></div>";
+      return "<div class='pf-match " + resultOf_(m, nama) + "'><span>" + escHtml_(m.home) + "</span><b>" + m.sh + " - " + m.sa + "</b><span>" + escHtml_(m.away) + "</span></div>";
     }).join("") : "<div class='pf-empty'>Belum ada pertandingan.</div>";
     var opps = Object.keys(klasemenMap).filter(function (n) { return n !== nama; });
     h += "<div class='pf-title'>Head-to-Head</div><select id='pf-h2h-sel' class='pf-h2h'><option value=''>Pilih lawan...</option>" +
-      opps.map(function (n) { return "<option value='" + n.replace(/'/g, "&#39;") + "'>" + n + "</option>"; }).join("") + "</select><div id='pf-h2h-out'></div>";
+      opps.map(function (n) { return "<option value='" + escHtml_(n) + "'>" + escHtml_(n) + "</option>"; }).join("") + "</select><div id='pf-h2h-out'></div>";
+    h += "<button class='pf-share' id='pf-share'>Bagikan ke WhatsApp</button>";
     document.getElementById("modal-content").innerHTML = h;
     document.getElementById("pf-h2h-sel").addEventListener("change", function () {
       var o = this.value, out = document.getElementById("pf-h2h-out");
       if (!o) { out.innerHTML = ""; return; }
+      var st = oppStats_(nama).filter(function (r) { return r.n === o; })[0];
       var hm = ms.filter(function (m) { return m.home === o || m.away === o; });
-      out.innerHTML = hm.length ? hm.map(function (m) {
-        return "<div class='pf-match " + resultOf_(m, nama) + "'><span>" + m.home + "</span><b>" + m.sh + " - " + m.sa + "</b><span>" + m.away + "</span></div>";
-      }).join("") : "<div class='pf-empty'>Belum pernah bertemu bulan ini.</div>";
+      out.innerHTML = (st ? "<div style='text-align:center;font-family:Oswald,sans-serif;color:var(--gold);margin-bottom:6px'>Sepanjang masa: " + st.w + " &ndash; " + st.d + " &ndash; " + st.l + " <span style='color:var(--muted);font-size:12px'>(gol " + st.gf + "-" + st.ga + ")</span></div>" : "") +
+        (hm.length ? hm.map(function (m) {
+          return "<div class='pf-match " + resultOf_(m, nama) + "'><span>" + escHtml_(m.home) + "</span><b>" + m.sh + " - " + m.sa + "</b><span>" + escHtml_(m.away) + "</span></div>";
+        }).join("") : "<div class='pf-empty'>Belum bertemu di season ini.</div>");
+    });
+    document.getElementById("pf-share").addEventListener("click", function () {
+      var t = "\u{1F4CA} " + nama + " - SHB League\nPeringkat #" + row[0] + " (" + row[9] + " poin)" + (kasta ? " · " + kasta : "") + "\nMain " + row[2] + ": " + row[3] + "M " + row[4] + "S " + row[5] + "K · Gol " + row[6] + "-" + row[7] +
+        (last5.length ? "\nForm: " + last5.map(function (m) { return ({ w: "M", d: "S", l: "K" })[resultOf_(m, nama)]; }).join(" ") : "") + "\n\n" + SITE_URL;
+      if (navigator.share) navigator.share({ text: t }).catch(function () {}); else window.open("https://wa.me/?text=" + encodeURIComponent(t), "_blank", "noopener");
     });
     document.getElementById("player-modal").style.display = "flex";
   }
-  function closeProfile() { document.getElementById("player-modal").style.display = "none"; }
+  function closeProfile() { profOpen = null; document.getElementById("player-modal").style.display = "none"; }
   document.getElementById("rows").addEventListener("click", function (e) {
     var el = e.target.closest ? e.target.closest(".player-name") : null;
     if (el) openProfile(el.getAttribute("data-nama"));
@@ -1517,6 +1696,7 @@
         .map(function (r) { return { bulan: String(r[0]), home: stripBadge_(r[1]), away: stripBadge_(r[2]), sh: Number(r[3]), sa: Number(r[4]) }; });
       statArsipOk = true;
       if (statCtx) { drawCmp_(); drawRivalry_(); }
+      if (profOpen) openProfile(profOpen);
     }, null);
   }
 
@@ -1851,6 +2031,148 @@
       var nh = nd ? mxData.names[+nd.getAttribute("data-i")] : null;
       if (nh !== mxHover) { mxHover = nh; mxApplyState_(); }
     });
+  })();
+
+  function onRiwayatReady_() {
+    if (profOpen) openProfile(profOpen);
+    if (document.getElementById("rw-hof") && document.getElementById("rw-hof").style.display !== "none") drawHof_();
+    maybeShowChampion_();
+  }
+
+  function drawHof_() {
+    var el = document.getElementById("rw-hof");
+    var rk = riwayatKlasemenData.filter(function (r) { return r[0] !== 'Bulan' && r[2] !== 'Nama'; }), ks = riwayatKastaData.filter(function (r) { return r[0] !== 'Bulan'; });
+    if (!rk.length) { el.innerHTML = "<p class='st-note' style='text-align:center;padding:20px'>Belum ada riwayat musim sebelumnya. Hall of Fame akan terisi setelah reset bulanan pertama.</p>"; return; }
+    var months = [];
+    rk.forEach(function (r) { if (months.indexOf(r[0]) < 0) months.push(r[0]); });
+    var P = {};
+    function pl(n) { return P[n] || (P[n] = { n: n, gelar: 0, podium: 0, k1: 0, bulan: 0, poin: 0, rankSum: 0 }); }
+    rk.forEach(function (r) {
+      if (Number(r[3]) <= 0) return;
+      var p = pl(r[2]), k = Number(r[1]);
+      p.bulan++; p.poin += Number(r[10]) || 0; p.rankSum += k;
+      if (k === 1) p.gelar++;
+      if (k <= 3) p.podium++;
+    });
+    ks.forEach(function (r) { if (r[5] === "Kasta 1") pl(r[1]).k1++; });
+    var arr = Object.keys(P).map(function (k) { return P[k]; }).sort(function (a, b) {
+      return (b.gelar - a.gelar) || (b.podium - a.podium) || (b.k1 - a.k1) || ((a.rankSum / (a.bulan || 1)) - (b.rankSum / (b.bulan || 1)));
+    });
+    var h = "<div class='ss-sec' style='margin-top:6px'>Raja Gelar</div>" + arr.slice(0, 8).map(function (p, i) {
+      var tr = p.gelar ? (p.gelar <= 4 ? new Array(p.gelar + 1).join("\u{1F3C6}") : "\u{1F3C6} <i>×" + p.gelar + "</i>") : "<span style='color:var(--muted);font-size:12px'>belum ada gelar</span>";
+      return "<div class='hof-row" + (i === 0 && p.gelar ? " top" : "") + "' data-p='" + escHtml_(p.n) + "'><span class='hof-rk'>" + (i + 1) + "</span>" + avatarHtml_(p.n, 36) +
+        "<div class='hof-mid'><b>" + escHtml_(p.n) + "</b><small>Podium " + p.podium + "x &middot; Kasta 1 " + p.k1 + "x &middot; " + p.bulan + " season</small></div><span class='hof-tr'>" + tr + "</span></div>";
+    }).join("");
+
+    // rekor
+    function best(rows, fn, min) {
+      var b = null; rows.forEach(function (r) { var v = fn(r); if (v === null || isNaN(v)) return; if (b === null || (min ? v < b.v : v > b.v)) b = { v: v, r: r }; }); return b;
+    }
+    var aktif = rk.filter(function (r) { return Number(r[3]) > 0; });
+    var recs = [];
+    var b1 = best(aktif, function (r) { return Number(r[10]); }); if (b1) recs.push(["\u{1F4AF}", "Poin Terbanyak", b1.r[2], b1.v + " poin", b1.r[0]]);
+    var b2 = best(aktif, function (r) { return Number(r[7]); }); if (b2) recs.push(["\u{1F945}", "Gol Terbanyak", b2.r[2], b2.v + " gol", b2.r[0]]);
+    var b3 = best(aktif.filter(function (r) { return Number(r[3]) >= 8; }), function (r) { return Number(r[8]) / Number(r[3]); }, true); if (b3) recs.push(["\u{1F9F1}", "Pertahanan Terbaik", b3.r[2], (Math.round(b3.v * 100) / 100) + " kebobolan/laga", b3.r[0]]);
+    var b4 = best(aktif.filter(function (r) { return Number(r[3]) >= 8; }), function (r) { return Number(r[4]) / Number(r[3]) * 100; }); if (b4) recs.push(["\u{1F4C8}", "Win Rate Tertinggi", b4.r[2], Math.round(b4.v) + "%", b4.r[0]]);
+    var b5 = best(aktif, function (r) { return Number(r[9]); }); if (b5) recs.push(["⚡", "Selisih Gol Terbaik", b5.r[2], "+" + b5.v, b5.r[0]]);
+    h += "<div class='ss-sec'>Rekor Sepanjang Masa</div><div class='hof-rec'>" + recs.map(function (x) {
+      return "<div class='ss-card' data-p='" + escHtml_(x[2]) + "' style='cursor:pointer'><span class='ico'>" + x[0] + "</span><small>" + x[1] + "</small><div class='nm'>" + escHtml_(x[2]) + "</div><div class='vl'>" + x[3] + "</div><small style='margin-top:4px'>" + escHtml_(x[4]) + "</small></div>"; }).join("") + "</div>";
+
+    // linimasa kasta
+    if (ks.length) {
+      var kn = {}; ks.forEach(function (r) { (kn[r[1]] = kn[r[1]] || {})[r[0]] = r[5]; });
+      var names = Object.keys(kn).sort(function (a, b) {
+        var ca = Object.keys(kn[a]).filter(function (m) { return kn[a][m] === "Kasta 1"; }).length, cb = Object.keys(kn[b]).filter(function (m) { return kn[b][m] === "Kasta 1"; }).length;
+        return (cb - ca) || a.localeCompare(b);
+      });
+      h += "<div class='ss-sec'>Linimasa Kasta</div><div class='hof-tl'><table><thead><tr><th></th>" + months.map(function (m) { return "<th>" + escHtml_(String(m).split(" ")[0].slice(0, 3)) + "</th>"; }).join("") + "</tr></thead><tbody>" +
+        names.map(function (n) {
+          return "<tr><td class='n'>" + escHtml_(n) + "</td>" + months.map(function (m) {
+            var k = kn[n][m]; return k ? "<td class='k k" + k.slice(-1) + "'>" + k.slice(-1) + "</td>" : "<td class='k k0'></td>"; }).join("") + "</tr>";
+        }).join("") + "</tbody></table></div><p class='st-note'>Warna emas = Kasta 1, perak = Kasta 2, perunggu = Kasta 3, kosong = tidak ikut bulan itu.</p>";
+    }
+
+    // juara tiap bulan
+    h += "<div class='ss-sec'>Juara Tiap Bulan</div>" + months.slice().reverse().map(function (m) {
+      var c = rk.filter(function (r) { return r[0] === m && Number(r[1]) === 1; })[0];
+      return c ? "<div class='hof-champ'><span>" + escHtml_(m) + "</span><span>\u{1F3C6} <b>" + escHtml_(c[2]) + "</b> &middot; " + c[10] + " poin</span></div>" : "";
+    }).join("");
+    el.innerHTML = h;
+  }
+
+  // ---------- Layar juara ----------
+  function confetti_(cv) {
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return;
+    var ctx = cv.getContext("2d"), W = cv.width = window.innerWidth, H = cv.height = window.innerHeight;
+    var cols = ["#E8B33D", "#4ADE80", "#F3F1E7", "#60A5FA", "#F472B6"], ps = [], i;
+    for (i = 0; i < 150; i++) ps.push({ x: Math.random() * W, y: -20 - Math.random() * H * 0.6, vx: (Math.random() - 0.5) * 2.2, vy: 2 + Math.random() * 3.5, r: 4 + Math.random() * 5, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.3, c: cols[i % cols.length] });
+    var t0 = null;
+    function f(ts) {
+      if (t0 === null) t0 = ts;
+      ctx.clearRect(0, 0, W, H);
+      ps.forEach(function (p) {
+        p.x += p.vx; p.y += p.vy; p.a += p.va;
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillStyle = p.c; ctx.fillRect(-p.r / 2, -p.r / 3, p.r, p.r * 0.6); ctx.restore();
+      });
+      if (ts - t0 < 6500 && document.getElementById("champ-modal").style.display !== "none") requestAnimationFrame(f); else ctx.clearRect(0, 0, W, H);
+    }
+    requestAnimationFrame(f);
+  }
+
+  function maybeShowChampion_() {
+    var rk = riwayatKlasemenData.filter(function (r) { return r[0] !== 'Bulan' && r[2] !== 'Nama'; });
+    if (!rk.length || champShown) return;
+    var latest = rk[rk.length - 1][0];
+    if (lsGet_("shb_champ_seen") === String(latest)) return;
+    var rows = rk.filter(function (r) { return r[0] === latest; });
+    var by = {}; rows.forEach(function (r) { by[Number(r[1])] = r; });
+    if (!by[1]) return;
+    champShown = true;
+    function col(k, medal) {
+      var r = by[k]; if (!r) return "<div class='ch-col'></div>";
+      var dl = k === 1 ? 1.1 : (k === 2 ? 0.5 : 0.1);
+      return "<div class='ch-col p" + k + "'><div class='ch-nm' style='animation-delay:" + (dl + 0.7) + "s'>" + escHtml_(r[2]) + "</div><div class='ch-pt' style='animation-delay:" + (dl + 0.8) + "s'>" + r[10] + " poin</div><div class='ch-bar' style='animation-delay:" + dl + "s'>" + medal + "</div></div>";
+    }
+    var k1 = riwayatKastaData.filter(function (r) { return r[0] === latest && r[5] === "Kasta 1"; }).map(function (r) { return r[1]; });
+    var el = document.getElementById("champ-modal");
+    el.innerHTML = "<canvas id='ch-cv'></canvas><div class='ch-card'><div class='ch-crown'>\u{1F451}</div><div class='ch-eb'>JUARA SEASON</div><div class='ch-t'>" + escHtml_(String(latest).toUpperCase()) + "</div>" +
+      "<div style='color:var(--gold);font-family:Oswald,sans-serif;font-size:20px;animation:ssUp .8s .4s ease both'>" + escHtml_(by[1][2]) + "</div>" +
+      "<div class='ch-pod'>" + col(2, "\u{1F948}") + col(1, "\u{1F3C6}") + col(3, "\u{1F949}") + "</div>" +
+      (k1.length ? "<div class='ch-kasta'>\u{1F947} Kasta 1: <b>" + k1.map(escHtml_).join(", ") + "</b></div>" : "") +
+      "<div class='ch-btns'><button class='sec' id='ch-close'>Tutup</button><button class='pri' id='ch-more'>Lihat Hasil Lengkap</button></div></div>";
+    el.style.display = "flex";
+    confetti_(document.getElementById("ch-cv"));
+    function close() { el.style.display = "none"; lsSet_("shb_champ_seen", String(latest)); }
+    document.getElementById("ch-close").onclick = close;
+    document.getElementById("ch-more").onclick = function () {
+      close();
+      goTab_("riwayat");
+      var sel = document.getElementById("riwayat-bulan");
+      if (sel) { sel.value = latest; renderPodium(latest); renderKastaGroups(latest); }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+  }
+
+  var champShown = false;
+
+  (function () {
+    var v = document.getElementById("view-riwayat");
+    v.addEventListener("click", function (e) {
+      var t = e.target.closest ? e.target.closest(".rw-toggle button") : null;
+      if (t) {
+        var m = t.getAttribute("data-rw");
+        Array.prototype.forEach.call(v.querySelectorAll(".rw-toggle button"), function (b) { b.classList.toggle("on", b === t); });
+        document.getElementById("rw-bulan").style.display = m === "bulan" ? "" : "none";
+        document.getElementById("rw-hof").style.display = m === "hof" ? "" : "none";
+        if (m === "hof") drawHof_();
+        return;
+      }
+      var pc = e.target.closest ? e.target.closest("#rw-hof [data-p]") : null;
+      if (pc && klasemenMap[pc.getAttribute("data-p")]) openProfile(pc.getAttribute("data-p"));
+    });
+    // muat riwayat di latar belakang (untuk layar juara & profil)
+    setTimeout(ensureRiwayat_, 1800);
   })();
 
   function renderHasil(table) {

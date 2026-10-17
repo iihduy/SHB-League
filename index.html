@@ -341,6 +341,35 @@
 @keyframes ssUp{to{opacity:1;transform:none}}
 @media(max-width:520px){.ss-tiles{grid-template-columns:repeat(2,1fr)}.ss-two{grid-template-columns:1fr}.ss-h1{font-size:26px}.ss-bar .nm{width:70px}}
 @media (prefers-reduced-motion:reduce){.ss-in{animation:none;opacity:1;transform:none}.ss-prog i,.ss-bar .tr i,.ss-hist i{transition:none}.ss-card,.ss-card .ico{transition:none}}
+
+.ss-svgwrap{background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:12px;padding:12px 8px 10px}
+.ss-svg{width:100%;height:auto;display:block;touch-action:pan-y;cursor:crosshair}
+.ss-read{font-size:12px;color:var(--muted);padding:8px 6px 0;min-height:34px;line-height:1.7}
+.ss-read b{color:var(--chalk)}
+.ss-read span{display:inline-block;margin-right:10px;white-space:nowrap}
+.ss-lchip{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 11px;border-radius:99px;border:1px solid var(--pitch-line);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.ss-lchip i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.ss-lchip.on{color:var(--chalk);background:rgba(255,255,255,.07)}
+.ss-lchip:not(.on) i{opacity:.35}
+.ss-sels{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ss-sels select{flex:1;min-width:0;padding:9px 10px;border-radius:8px;background:var(--pitch-panel);color:var(--chalk);border:1px solid var(--pitch-line);font-family:'Inter',sans-serif;font-size:14px}
+.ss-sels span{font-family:'Oswald',sans-serif;color:var(--gold);font-size:16px}
+.ss-vs{background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:12px;padding:14px 12px}
+.ss-vs-h{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px;gap:8px}
+.ss-vs-h div{flex:1;min-width:0}.ss-vs-h div:last-child{text-align:right}
+.ss-vs-h b{display:block;font-family:'Oswald',sans-serif;font-size:20px;overflow:hidden;text-overflow:ellipsis}
+.ss-vs-h small{color:var(--muted);font-size:11px}
+.ss-vr{display:grid;grid-template-columns:34px 1fr 76px 1fr 34px;align-items:center;gap:6px;margin-bottom:7px;font-size:13px}
+.ss-vr .l{text-align:right;font-family:'Oswald',sans-serif}.ss-vr .r{text-align:left;font-family:'Oswald',sans-serif}
+.ss-vr .c{text-align:center;font-size:9px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+.ss-vr .bl,.ss-vr .br{height:8px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;display:flex}
+.ss-vr .bl{justify-content:flex-end}
+.ss-vr .bl i,.ss-vr .br i{display:block;height:100%;border-radius:99px;background:#2d6a4d}
+.ss-vr .w{color:var(--gold);font-weight:700}
+.ss-vr .bl i.w,.ss-vr .br i.w{background:var(--gold)}
+.ss-h2h{margin-top:14px;padding-top:12px;border-top:1px dashed var(--pitch-line);font-size:13px}
+.ss-h2h .tl{text-align:center;font-family:'Oswald',sans-serif;font-size:18px;margin-bottom:8px}
+.ss-h2h .tl em{font-style:normal;color:var(--gold)}
 </style>
 </head>
 <body>
@@ -811,7 +840,7 @@
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeProfile(); });
 
   var STAT_MIN_MAIN = 3; // minimal laga untuk penghargaan/peringkat berbasis rata-rata
-  var statBoard = "poin", statAnimated = false, statData = null;
+  var statBoard = "poin", statAnimated = false, statData = null, statCtx = null, statHidden = null, statCmpA = null, statCmpB = null;
   function escHtml_(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/'/g, "&#39;"); }
   function f2_(x) { return (Math.round(x * 100) / 100).toString(); }
 
@@ -924,6 +953,10 @@
     }).join("") + "</div><div id='ss-board'>" + boardHtml_(boards[statBoard]) + "</div>";
     if (statBoard === "kebobolan" || statBoard === "winrate") h += "<p class='st-note'>Hanya pemain dengan minimal " + STAT_MIN_MAIN + " laga.</p>";
 
+    statCtx = { ms: ms, list: list, sorted: sorted };
+    h += "<div class='ss-sec'>Grafik Poin</div><div id='ss-chart'></div>";
+    h += "<div class='ss-sec'>Adu Pemain</div><div id='ss-cmp'></div>";
+
     // ---- komposisi hasil & distribusi gol ----
     var mnang = ms.length - seri;
     var maxH = Math.max.apply(null, hist) || 1;
@@ -964,6 +997,8 @@
     h += "<p class='st-note'>Penghargaan berbasis rata-rata hanya untuk pemain dengan minimal " + STAT_MIN_MAIN + " laga. Ketuk nama atau kartu untuk membuka profil pemain. Season baru dimulai tiap awal bulan.</p>";
     box.innerHTML = h;
     box._boards = boards;
+    drawChart_();
+    drawCmp_();
     finishStat_();
   }
 
@@ -1029,6 +1064,134 @@
       var el = e.target.closest ? e.target.closest("[data-p]") : null;
       if (el && klasemenMap[el.getAttribute("data-p")]) openProfile(el.getAttribute("data-p"));
     });
+  })();
+
+  var CHART_COLORS = ["#E8B33D","#4ADE80","#60A5FA","#F472B6","#F97316","#A78BFA","#22D3EE","#FACC15","#FB7185","#34D399","#C084FC","#94A3B8"];
+
+  function chartSeries_() {
+    var ms = statCtx.ms, names = statCtx.sorted.map(function (p) { return p.n; });
+    var cum = {}; names.forEach(function (n) { cum[n] = [0]; });
+    var cur = {}; names.forEach(function (n) { cur[n] = 0; });
+    ms.forEach(function (m) {
+      if (m.sh > m.sa) cur[m.home] += 3; else if (m.sh < m.sa) cur[m.away] += 3; else { cur[m.home]++; cur[m.away]++; }
+      names.forEach(function (n) { cum[n].push(cur[n]); });
+    });
+    return { names: names, cum: cum };
+  }
+
+  function drawChart_() {
+    var el = document.getElementById("ss-chart");
+    if (!el || !statCtx) return;
+    var N = statCtx.ms.length;
+    var d = chartSeries_();
+    if (statHidden === null) { statHidden = {}; d.names.forEach(function (n, i) { if (i >= 5) statHidden[n] = true; }); }
+    var color = {}; d.names.forEach(function (n, i) { color[n] = CHART_COLORS[i % CHART_COLORS.length]; });
+    var W = 360, H = 210, L = 30, R = 10, T = 10, B = 24;
+    var maxY = 3;
+    d.names.forEach(function (n) { if (!statHidden[n]) maxY = Math.max(maxY, d.cum[n][N]); });
+    maxY = Math.ceil(maxY / 3) * 3;
+    function x(i) { return L + (N ? i / N : 0) * (W - L - R); }
+    function y(v) { return T + (1 - v / maxY) * (H - T - B); }
+
+    var svg = "<svg class='ss-svg' viewBox='0 0 " + W + " " + H + "' data-n='" + N + "' role='img' aria-label='Grafik perkembangan poin'>";
+    for (var g = 0; g <= 3; g++) {
+      var gv = Math.round(maxY * g / 3);
+      svg += "<line x1='" + L + "' x2='" + (W - R) + "' y1='" + y(gv) + "' y2='" + y(gv) + "' stroke='rgba(255,255,255,.08)'/><text x='" + (L - 6) + "' y='" + (y(gv) + 4) + "' fill='#8FAF9B' font-size='10' text-anchor='end'>" + gv + "</text>";
+    }
+    var step = Math.max(1, Math.ceil(N / 8));
+    for (var i = 0; i <= N; i += step) svg += "<text x='" + x(i) + "' y='" + (H - 6) + "' fill='#8FAF9B' font-size='10' text-anchor='middle'>" + i + "</text>";
+    d.names.slice().reverse().forEach(function (n) {
+      if (statHidden[n]) return;
+      var pts = d.cum[n].map(function (v, i) { return x(i).toFixed(1) + "," + y(v).toFixed(1); }).join(" ");
+      svg += "<polyline fill='none' stroke='" + color[n] + "' stroke-width='2.4' stroke-linejoin='round' stroke-linecap='round' points='" + pts + "'/>" +
+        "<circle cx='" + x(N).toFixed(1) + "' cy='" + y(d.cum[n][N]).toFixed(1) + "' r='3.5' fill='" + color[n] + "'/>";
+    });
+    svg += "<line id='ss-cross' x1='0' x2='0' y1='" + T + "' y2='" + (H - B) + "' stroke='rgba(255,255,255,.35)' stroke-dasharray='3 3' style='display:none'/></svg>";
+
+    el.innerHTML = "<div class='ss-chips'>" + d.names.map(function (n) {
+      return "<button class='ss-lchip" + (statHidden[n] ? "" : " on") + "' data-l='" + escHtml_(n) + "'><i style='background:" + color[n] + "'></i>" + escHtml_(n) + "</button>";
+    }).join("") + "</div><div class='ss-svgwrap'>" + svg + "<div class='ss-read' id='ss-read'></div></div>" +
+      "<p class='st-note'>Sumbu bawah = pertandingan ke-n. Geser jari atau kursor di grafik untuk melihat poin tiap pemain.</p>";
+    chartReadout_(N);
+  }
+
+  function chartReadout_(i) {
+    var rd = document.getElementById("ss-read");
+    if (!rd || !statCtx) return;
+    var d = chartSeries_();
+    var vis = d.names.filter(function (n) { return !statHidden[n]; }).sort(function (a, b) { return d.cum[b][i] - d.cum[a][i]; });
+    var colorOf = {}; d.names.forEach(function (n, k) { colorOf[n] = CHART_COLORS[k % CHART_COLORS.length]; });
+    rd.innerHTML = "<b>" + (i === 0 ? "Awal season" : "Setelah laga ke-" + i) + ":</b> " + (vis.length ? vis.map(function (n) {
+      return "<span><i style='display:inline-block;width:8px;height:8px;border-radius:50%;background:" + colorOf[n] + ";margin-right:4px'></i>" + escHtml_(n) + " <b>" + d.cum[n][i] + "</b></span>";
+    }).join("") : "pilih pemain di atas");
+  }
+
+  function drawCmp_() {
+    var el = document.getElementById("ss-cmp");
+    if (!el || !statCtx) return;
+    var list = statCtx.list.slice().sort(function (a, b) { return a.n.localeCompare(b.n); });
+    if (list.length < 2) { el.innerHTML = "<p class='st-note'>Butuh minimal 2 pemain yang sudah bermain.</p>"; return; }
+    var byName = {}; list.forEach(function (p) { byName[p.n] = p; });
+    if (!byName[statCmpA] || !byName[statCmpB] || statCmpA === statCmpB) { statCmpA = statCtx.sorted[0].n; statCmpB = statCtx.sorted[1].n; }
+    var A = byName[statCmpA], Bp = byName[statCmpB];
+    function opts(sel) { return list.map(function (p) { return "<option value='" + escHtml_(p.n) + "'" + (p.n === sel ? " selected" : "") + ">" + escHtml_(p.n) + "</option>"; }).join(""); }
+
+    var rows = [
+      ["Poin", A.poin, Bp.poin, 1], ["Main", A.main, Bp.main, 0], ["Menang", A.m, Bp.m, 1], ["Seri", A.s, Bp.s, 0], ["Kalah", A.k, Bp.k, -1],
+      ["Gol", A.gm, Bp.gm, 1], ["Kebobolan", A.gk, Bp.gk, -1], ["Selisih", A.sg, Bp.sg, 1],
+      ["Win %", Math.round(A.m / A.main * 100), Math.round(Bp.m / Bp.main * 100), 1]
+    ];
+    var rowsHtml = rows.map(function (r) {
+      var a = r[1], b = r[2], dir = r[3], mx = Math.max(Math.abs(a), Math.abs(b), 1);
+      var aw = dir === 1 ? a > b : (dir === -1 ? a < b : false), bw = dir === 1 ? b > a : (dir === -1 ? b < a : false);
+      return "<div class='ss-vr'><span class='l" + (aw ? " w" : "") + "'>" + a + "</span>" +
+        "<span class='bl'><i class='" + (aw ? "w" : "") + "' style='width:" + (Math.abs(a) / mx * 100) + "%'></i></span><span class='c'>" + r[0] + "</span>" +
+        "<span class='br'><i class='" + (bw ? "w" : "") + "' style='width:" + (Math.abs(b) / mx * 100) + "%'></i></span><span class='r" + (bw ? " w" : "") + "'>" + b + "</span></div>";
+    }).join("");
+
+    var hm = statCtx.ms.filter(function (m) { return (m.home === A.n && m.away === Bp.n) || (m.home === Bp.n && m.away === A.n); });
+    var wa = 0, wb = 0, dr = 0;
+    hm.forEach(function (m) {
+      var sa = m.home === A.n ? m.sh : m.sa, sb = m.home === A.n ? m.sa : m.sh;
+      if (sa > sb) wa++; else if (sb > sa) wb++; else dr++;
+    });
+    var h2h = "<div class='ss-h2h'>" + (hm.length ?
+      "<div class='tl'><em>" + wa + "</em> &ndash; " + dr + " &ndash; <em>" + wb + "</em></div>" +
+      hm.map(function (m) { return "<div class='ss-feed'><span class='t a'>" + escHtml_(m.home) + "</span><b>" + m.sh + " - " + m.sa + "</b><span class='t'>" + escHtml_(m.away) + "</span></div>"; }).join("") :
+      "<div class='st-note' style='text-align:center'>Belum pernah bertemu di season ini.</div>") + "</div>";
+
+    el.innerHTML = "<div class='ss-sels'><select class='ss-sel' data-side='a'>" + opts(statCmpA) + "</select><span>VS</span><select class='ss-sel' data-side='b'>" + opts(statCmpB) + "</select></div>" +
+      "<div class='ss-vs'><div class='ss-vs-h'><div><b>" + escHtml_(A.n) + "</b><small>" + A.poin + " poin</small></div><div><b>" + escHtml_(Bp.n) + "</b><small>" + Bp.poin + " poin</small></div></div>" + rowsHtml + h2h + "</div>";
+  }
+
+  (function () {
+    var box = document.getElementById("statistik-body");
+    box.addEventListener("click", function (e) {
+      var lc = e.target.closest ? e.target.closest(".ss-lchip") : null;
+      if (!lc) return;
+      var n = lc.getAttribute("data-l");
+      statHidden[n] = !statHidden[n];
+      drawChart_();
+    });
+    box.addEventListener("change", function (e) {
+      var sel = e.target.closest ? e.target.closest(".ss-sel") : null;
+      if (!sel) return;
+      if (sel.getAttribute("data-side") === "a") statCmpA = sel.value; else statCmpB = sel.value;
+      drawCmp_();
+    });
+    function move(e) {
+      var svg = e.target.closest ? e.target.closest(".ss-svg") : null;
+      if (!svg || !statCtx) return;
+      var N = parseInt(svg.getAttribute("data-n"), 10), r = svg.getBoundingClientRect();
+      var vx = (e.clientX - r.left) / r.width * 360;
+      var i = Math.max(0, Math.min(N, Math.round((vx - 30) / (360 - 30 - 10) * N)));
+      var cx = 30 + (N ? i / N : 0) * (360 - 30 - 10);
+      var cr = document.getElementById("ss-cross");
+      if (cr) { cr.setAttribute("x1", cx); cr.setAttribute("x2", cx); cr.style.display = ""; }
+      chartReadout_(i);
+    }
+    box.addEventListener("pointermove", move);
+    box.addEventListener("pointerdown", move);
   })();
 
   function renderHasil(table) {

@@ -1065,6 +1065,96 @@
     });
   }
 
+  // ---------- Berita & wawancara fiktif (berdasarkan data liga) ----------
+  function fakeNews_(rows, ms) {
+    var day = new Date().toISOString().slice(0, 10);
+    function h(str) { var x = 0, i; str = str + day; for (i = 0; i < str.length; i++) x = (x * 31 + str.charCodeAt(i)) >>> 0; return x; }
+    function pick(arr, key) { return arr[h(key) % arr.length]; }
+    var out = [], N = function (n) { return "<b>" + escHtml_(n) + "</b>"; };
+    var sorted = rows.slice().sort(function (a, b) { return Number(a[0]) - Number(b[0]); });
+    var nm = function (r) { return stripBadge_(r[1]); };
+    if (!sorted.length || Number(sorted[0][2]) === 0) return out;
+    var lead = sorted[0], last = sorted[sorted.length - 1], sec = sorted[1];
+
+    out.push("\u{1F3A4} <i>WAWANCARA</i> " + N(nm(lead)) + ": " + pick([
+      "“Saya tidak merasa di puncak, saya merasa klasemen yang kebetulan menemukan saya.”",
+      "“Tekanan? Saya main tanpa beban, yang berat itu cuma kasta yang harus dijaga.”",
+      "“Puncak klasemen itu dingin, tapi saya sudah bawa jaket.”",
+      "“Semua orang mengejar saya. Saya sih santai, tinggal jalan terus.”"], "lead" + nm(lead)));
+
+    if (sec && lead !== sec) {
+      var gap = Number(lead[9]) - Number(sec[9]);
+      out.push("\u{1F4F0} <i>BERITA</i> " + N(nm(sec)) + " membuntuti " + N(nm(lead)) + " hanya " + (gap <= 0 ? "dengan selisih selisih gol" : gap + " poin") + ". " + pick([
+        "Sumber di tribun bilang: “Udara sudah mulai panas.”",
+        "Pengamat dadakan di warung kopi: “Ini belum selesai.”",
+        "Kubu pemimpin disebut mulai sering melirik spion."], "gap" + nm(sec)));
+    }
+
+    if (last && last !== lead && Number(last[2]) > 0) {
+      out.push("\u{1F3A4} <i>WAWANCARA</i> " + N(nm(last)) + " (dasar klasemen): " + pick([
+        "“Ini bukan terpuruk, ini sedang mengumpulkan tenaga untuk kebangkitan.”",
+        "“Saya sengaja di bawah supaya lawan lengah.”",
+        "“Strategi saya jangka panjang. Lihat saja nanti.”",
+        "“Kontrolernya agak error tadi, tapi tidak apa-apa.”"], "last" + nm(last)));
+    }
+
+    // pemain kalah beruntun / menang beruntun
+    var lose = null, win = null;
+    rows.forEach(function (r) {
+      var n = nm(r), l = matchesOf_(n), k, sl = 0, sw = 0;
+      for (k = l.length - 1; k >= 0 && resultOf_(l[k], n) === "l"; k--) sl++;
+      for (k = l.length - 1; k >= 0 && resultOf_(l[k], n) === "w"; k--) sw++;
+      if (sl >= 2 && (!lose || sl > lose.s)) lose = { n: n, s: sl };
+      if (sw >= 2 && (!win || sw > win.s)) win = { n: n, s: sw };
+    });
+    if (lose) out.push("\u{1F4F0} <i>BERITA</i> " + N(lose.n) + " kalah " + lose.s + " laga beruntun. Kabarnya sedang " + pick(["ganti stik", "menyalahkan sinyal", "berlatih diam-diam", "mencari sandaran di rumah"], "lose" + lose.n) + ".");
+    if (win) out.push("\u{1F3A4} <i>WAWANCARA</i> " + N(win.n) + " (menang " + win.s + " laga beruntun): " + pick([
+      "“Rahasianya? Tidur cukup dan tidak panik.”",
+      "“Saya cuma main seperti biasa, kebetulan lawannya yang tidak biasa.”",
+      "“Jangan tanya taktik, itu rahasia dapur.”"], "win" + win.n));
+
+    // laga terakhir
+    var lm = ms[ms.length - 1];
+    if (lm) {
+      var d = lm.sh - lm.sa, w = d > 0 ? lm.home : lm.away, lo = d > 0 ? lm.away : lm.home;
+      if (d === 0) {
+        out.push("\u{1F4F0} <i>BERITA</i> " + N(lm.home) + " dan " + N(lm.away) + " bermain imbang " + lm.sh + "-" + lm.sa + ". Keduanya mengaku “puas tapi tidak puas”.");
+      } else {
+        out.push("\u{1F3A4} <i>WAWANCARA</i> " + N(lo) + " usai kalah " + Math.max(lm.sh, lm.sa) + "-" + Math.min(lm.sh, lm.sa) + " dari " + N(w) + ": " + pick([
+          "“Wasitnya, eh tidak ada wasit. Ya sudah, saya yang salah.”",
+          "“Saya kalah, tapi saya menang di hati.”",
+          "“Minta rematch sekarang juga.”",
+          "“Tadi sengaja mengalah supaya dia senang.”"], "lm" + lo + w));
+      }
+    }
+
+    // skor besar
+    var big = null;
+    ms.forEach(function (m) { var dd = Math.abs(m.sh - m.sa); if (dd >= 3 && (!big || dd > big.d)) big = { m: m, d: dd }; });
+    if (big) {
+      var bw = big.m.sh > big.m.sa ? big.m.home : big.m.away, bl = big.m.sh > big.m.sa ? big.m.away : big.m.home;
+      out.push("\u{1F6A8} <i>BERITA</i> " + N(bw) + " membantai " + N(bl) + " " + Math.max(big.m.sh, big.m.sa) + "-" + Math.min(big.m.sh, big.m.sa) + ". Saksi mata: “" + pick(["Itu bukan pertandingan, itu pelajaran.", "Saya sampai tidak tega melihat.", "Gawangnya seperti pintu rumah terbuka."], "big" + bw) + "”");
+    }
+
+    // top skor
+    var sc = rows.slice().sort(function (a, b) { return Number(b[6]) - Number(a[6]); })[0];
+    if (sc && Number(sc[6]) > 0 && sc !== lead) out.push("\u{1F3A4} <i>WAWANCARA</i> top skor " + N(nm(sc)) + " (" + sc[6] + " gol): " + pick(["“Gol itu seperti rezeki, tinggal dijemput.”", "“Saya tidak mencari gol, golnya yang mencari saya.”"], "sc" + nm(sc)));
+
+    // rivalitas terpanas: pasangan dengan pertemuan paling seimbang
+    var pr = {};
+    ms.forEach(function (m) {
+      var k = [m.home, m.away].sort().join("|"), r = pr[k] || (pr[k] = { a: [m.home, m.away].sort()[0], b: [m.home, m.away].sort()[1], n: 0, aw: 0, bw: 0 });
+      r.n++; var w2 = m.sh > m.sa ? m.home : (m.sh < m.sa ? m.away : null); if (w2 === r.a) r.aw++; else if (w2 === r.b) r.bw++;
+    });
+    var hot = Object.keys(pr).map(function (k) { return pr[k]; }).filter(function (r) { return r.n >= 2 && r.aw === r.bw; })[0];
+    if (hot) out.push("\u{1F525} <i>BERITA</i> Rivalitas " + N(hot.a) + " vs " + N(hot.b) + " makin panas, skor pertemuan imbang " + hot.aw + "-" + hot.bw + ". Keduanya saling tantang di grup WhatsApp.");
+
+    // pemain paling jarang main
+    var few = rows.slice().sort(function (a, b) { return Number(a[2]) - Number(b[2]); })[0];
+    if (few && Number(few[2]) < Number(lead[2]) - 2) out.push("\u{1F4F0} <i>BERITA</i> " + N(nm(few)) + " baru main " + few[2] + " laga. " + pick(["Manajemen mencari tahu: sibuk atau sengaja menghindar?", "Katanya sedang “pemanasan” sejak awal bulan."], "few" + nm(few)));
+    return out;
+  }
+
   function buildTicker_() {
     var names = Object.keys(klasemenMap), ms = formData || [], it = [], i;
     if (!names.length) return;
@@ -1087,6 +1177,7 @@
     if (big) it.push("\u{1F4A5} Kemenangan terbesar: " + escHtml_(big.m.home) + " " + big.m.sh + "-" + big.m.sa + " " + escHtml_(big.m.away));
     ms.slice(-3).reverse().forEach(function (m) { it.push("⚽ " + escHtml_(m.home) + " <b>" + m.sh + "-" + m.sa + "</b> " + escHtml_(m.away)); });
     if (ms.length) it.push("\u{1F4CA} " + ms.length + " laga sudah dimainkan bulan ini");
+    try { it = it.concat(fakeNews_(rows, ms), ["<small style='opacity:.6'>*Berita & wawancara bersifat fiktif, hanya hiburan</small>"]); } catch (e) {}
     var el = document.getElementById("ticker"), inn = document.getElementById("ticker-in");
     if (!it.length) { el.style.display = "none"; return; }
     var html = it.map(function (x) { return "<span>" + x + "</span>"; }).join("");

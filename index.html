@@ -488,6 +488,31 @@
 .mx-pair h4{margin:0 0 8px;font-family:'Oswald',sans-serif;font-size:16px;font-weight:500}
 .mx-pair h4 em{font-style:normal;color:var(--gold);font-size:12px;margin-left:8px}
 @media (prefers-reduced-motion:reduce){.mx-e.draw,.mx-e.fade{animation:none}.mx-n.sel .halo{animation:none}}
+
+/* ---- Tab bar v2 ---- */
+.tabs{position:sticky;top:0;z-index:30;background:var(--pitch-dark);padding-top:6px;margin-top:8px;gap:18px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs-in{position:relative;display:flex;gap:18px;min-width:max-content}
+.tab-btn{position:relative;display:inline-flex;align-items:center;gap:6px;transition:color .25s}
+.tab-btn .ti{font-size:14px;filter:grayscale(1) opacity(.65);transition:filter .25s,transform .25s}
+.tab-btn.active .ti{filter:none;transform:scale(1.15)}
+.tab-btn.active{border-bottom-color:transparent}
+.tab-ind{position:absolute;left:0;bottom:-1px;height:2px;width:0;background:var(--gold);border-radius:2px;transition:transform .35s cubic-bezier(.3,.8,.3,1),width .35s cubic-bezier(.3,.8,.3,1)}
+.tab-dot{position:absolute;top:5px;right:-6px;width:8px;height:8px;border-radius:50%;background:#4ADE80;box-shadow:0 0 0 2px var(--pitch-dark);animation:pulse 2.4s ease-in-out infinite}
+.tabs.more{-webkit-mask-image:linear-gradient(to right,#000 86%,transparent);mask-image:linear-gradient(to right,#000 86%,transparent)}
+/* ---- Sub-tab Season Stats ---- */
+.ss-subbar{position:sticky;top:var(--tabh,46px);z-index:25;display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding:10px 0 8px;margin-top:6px;background:var(--pitch-dark);scrollbar-width:none}
+.ss-subbar::-webkit-scrollbar{display:none}
+.ss-subbar button{flex-shrink:0;font-family:'Oswald',sans-serif;font-size:13px;padding:6px 14px;border-radius:99px;border:1px solid var(--pitch-line);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.ss-subbar button.on{background:var(--gold);color:#0B1F17;border-color:var(--gold);font-weight:600}
+.ss-sub{display:none}.ss-sub.on{display:block;animation:ssUp .45s ease}
+.ss-share{order:1;flex-shrink:0;font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid #25D366;background:rgba(37,211,102,.1);color:#4ADE80;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:0;text-transform:none}
+.ss-share:hover{background:rgba(37,211,102,.25)}
+.ss-new{background:linear-gradient(135deg,rgba(74,222,128,.14),rgba(74,222,128,.03));border:1px solid rgba(74,222,128,.45);border-radius:12px;padding:12px 14px;margin-top:12px}
+.ss-new .ln{font-size:13px;line-height:1.55;margin:3px 0;color:var(--chalk)}
+.ss-new .ln b{color:var(--gold)}
+.ss-new .big{font-family:'Oswald',sans-serif;font-size:18px;margin-bottom:4px}
+.ss-up{color:#4ADE80}.ss-dn{color:#E0715A}
 </style>
 </head>
 <body>
@@ -507,13 +532,14 @@
     <button id="announcement-close" class="announcement-close" aria-label="Tutup">&times;</button>
   </div>
 
-  <div class="tabs">
-    <button class="tab-btn active" data-view="klasemen">Klasemen</button>
-    <button class="tab-btn" data-view="hasil">Hasil</button>
-    <button class="tab-btn" data-view="matrix">Matrik Pertemuan</button>
-    <button class="tab-btn" data-view="statistik">Season Stats</button>
-    <button class="tab-btn" data-view="riwayat">Riwayat</button>
-  </div>
+  <div class="tabs" id="tabs"><div class="tabs-in" id="tabs-in">
+    <button class="tab-btn active" data-view="klasemen"><span class="ti">🏆</span>Klasemen</button>
+    <button class="tab-btn" data-view="hasil"><span class="ti">⚽</span>Hasil</button>
+    <button class="tab-btn" data-view="matrix"><span class="ti">🕸️</span>Matrik Pertemuan</button>
+    <button class="tab-btn" data-view="statistik"><span class="ti">📊</span>Season Stats</button>
+    <button class="tab-btn" data-view="riwayat"><span class="ti">📜</span>Riwayat</button>
+    <span class="tab-ind" id="tab-ind"></span>
+  </div></div>
 
   <div id="view-klasemen" class="view active">
     <table>
@@ -942,6 +968,7 @@
   }
   function applyFormGuide() {
     applyRankMoves();
+    if (typeof updateNewDots_ === "function") updateNewDots_();
     if (typeof mxPanel_ === "function" && mxData && mxPairSel) mxPanel_();
     var els = document.querySelectorAll(".form-guide");
     Array.prototype.forEach.call(els, function (el) {
@@ -987,7 +1014,7 @@
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeProfile(); });
 
   var STAT_MIN_MAIN = 3; // minimal laga untuk penghargaan/peringkat berbasis rata-rata
-  var statArsip = [], statArsipOk = false, statRemFilter = "", statSig = null, statBoard = "poin", statAnimated = false, statData = null, statCtx = null, statHidden = null, statCmpA = null, statCmpB = null;
+  var statSub = "ringkasan", statShare = {}, SITE_URL = "https://iihduy.github.io/SHB-League/", statArsip = [], statArsipOk = false, statRemFilter = "", statSig = null, statBoard = "poin", statAnimated = false, statData = null, statCtx = null, statHidden = null, statCmpA = null, statCmpB = null;
   function escHtml_(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/'/g, "&#39;"); }
   function f2_(x) { return (Math.round(x * 100) / 100).toString(); }
 
@@ -1001,6 +1028,46 @@
     statSig = sig;
     statData = ms;
     drawStatistik();
+  }
+
+  function secHead_(title, key) {
+    return "<div class='ss-sec'>" + title + "<button class='ss-share' data-share='" + key + "' aria-label='Bagikan ke WhatsApp'>Bagikan</button></div>";
+  }
+
+  function terbaruHtml_(ms, list, anim) {
+    if (!ms.length) return "";
+    var last = ms[ms.length - 1];
+    var now_ = rankMap_(ms), before = rankMap_(ms.slice(0, -1));
+    var moves = [];
+    Object.keys(now_).forEach(function (n) {
+      if (before[n] === undefined) return;
+      var d = before[n] - now_[n];
+      if (d !== 0) moves.push({ n: n, d: d, from: before[n], to: now_[n] });
+    });
+    moves.sort(function (a, b) { return Math.abs(b.d) - Math.abs(a.d); });
+    var streaks = list.filter(function (p) { return p.cur >= 2; }).sort(function (a, b) { return b.cur - a.cur; }).slice(0, 3);
+    var res = last.sh > last.sa ? last.home + " menang" : (last.sh < last.sa ? last.away + " menang" : "Seri");
+    var html = "<div class='ss-new" + anim + "'><div class='ss-eyebrow' style='color:#4ADE80'>Terbaru</div>" +
+      "<div class='big'>" + escHtml_(last.home) + " " + last.sh + " - " + last.sa + " " + escHtml_(last.away) + "</div>" +
+      "<div class='ln'>" + escHtml_(res) + " di laga ke-" + ms.length + " season ini.</div>";
+    var txt = "⚽ Laga terbaru SHB League: " + last.home + " " + last.sh + "-" + last.sa + " " + last.away + " (" + res + ")";
+    moves.slice(0, 3).forEach(function (m) {
+      html += "<div class='ln'>" + (m.d > 0 ? "<span class='ss-up'>▲</span>" : "<span class='ss-dn'>▼</span>") + " <b>" + escHtml_(m.n) + "</b> " + (m.d > 0 ? "naik" : "turun") + " ke peringkat " + m.to + " <span style='color:var(--muted)'>(dari " + m.from + ")</span></div>";
+      txt += "\n" + (m.d > 0 ? "\u{1F4C8} " : "\u{1F4C9} ") + m.n + (m.d > 0 ? " naik" : " turun") + " ke peringkat " + m.to;
+    });
+    streaks.forEach(function (p) {
+      html += "<div class='ln'>\u{1F525} <b>" + escHtml_(p.n) + "</b> sedang menang " + p.cur + " laga beruntun.</div>";
+      txt += "\n\u{1F525} " + p.n + " menang " + p.cur + " laga beruntun";
+    });
+    statShare.terbaru = txt + "\n\n" + SITE_URL;
+    return html + "</div>";
+  }
+
+  function shareText_(key) {
+    var t = statShare[key];
+    if (!t) return;
+    if (navigator.share) { navigator.share({ text: t }).catch(function () {}); return; }
+    window.open("https://wa.me/?text=" + encodeURIComponent(t), "_blank", "noopener");
   }
 
   function drawStatistik() {
@@ -1063,7 +1130,7 @@
       "<div class='ss-prog'><i data-w='" + pct + "'></i></div><div class='ss-prog-meta'><span>Season berjalan &middot; " + Math.round(pct) + "%</span><span>" + sisaTxt + " &middot; reset " + tglAkhir + "</span></div>" +
       "<div class='ss-leader' data-p='" + escHtml_(lead.n) + "'>\u{1F451} Pemimpin sementara <b>" + escHtml_(lead.n) + "</b> &middot; " + lead.poin + " poin</div></div>";
 
-    var h = hero;
+    var h = "";
     h += "<div class='ss-tiles" + anim + "'" + delay(1) + ">" + [
       [ms.length, "Pertandingan", 0], [totalGol, "Total Gol", 0], [avg, "Gol / Laga", 2], [seriPct, "% Seri", 0]
     ].map(function (x) { return "<div class='ss-tile'><b data-count='" + x[0] + "' data-dec='" + x[2] + "'>0</b><span>" + x[1] + "</span></div>"; }).join("") + "</div>";
@@ -1084,7 +1151,10 @@
     if ((t = top(list, function (p) { return p.s; }, "max")) && t.v > 0) awards.push(["\u{1F91D}", "Raja Seri", t, t.v + " seri"]);
     if ((t = top(list, function (p) { return p.main; }, "max"))) awards.push(["\u{1F3AE}", "Paling Rajin", t, t.v + " laga"]);
 
-    h += "<div class='ss-sec'>Sorotan Season</div><div class='ss-cards'>" + awards.map(function (a, i) {
+    statShare.sorotan = "\u{1F3C6} Sorotan Season " + bulanNama[now.getMonth()] + " - SHB League\n" + awards.map(function (a) {
+      return a[0] + " " + a[1] + ": " + a[2].names.join(", ") + " (" + a[3] + ")"; }).join("\n") + "\n\n" + SITE_URL;
+    h += terbaruHtml_(ms, list, anim);
+    h += secHead_("Sorotan Season", "sorotan") + "<div class='ss-cards'>" + awards.map(function (a, i) {
       return "<div class='ss-card" + anim + "'" + delay(2 + i * 0.5) + " tabindex='0' data-p='" + escHtml_(a[2].names[0]) + "'><span class='ico'>" + a[0] + "</span><small>" + a[1] + "</small>" +
         "<div class='nm'>" + (a[2].names.length > 3 ? a[2].names.slice(0, 2).map(escHtml_).join(", ") + " +" + (a[2].names.length - 2) + " lainnya" : a[2].names.map(escHtml_).join(", ")) + "</div><div class='vl'>" + a[3] + "</div></div>";
     }).join("") + "</div>";
@@ -1104,11 +1174,10 @@
     if (statBoard === "kebobolan" || statBoard === "winrate") h += "<p class='st-note'>Hanya pemain dengan minimal " + STAT_MIN_MAIN + " laga.</p>";
 
     statCtx = { ms: ms, list: list, sorted: sorted };
-    h += "<div class='ss-sec'>Peluang Juara</div><div id='ss-pj'></div>";
-    h += "<div class='ss-sec'>Laga Tersisa</div><div id='ss-rem'></div>";
-    h += "<div class='ss-sec'>Balapan Poin</div><div id='ss-chart'></div>";
-    h += "<div class='ss-sec'>Adu Pemain</div><div id='ss-cmp'></div>";
-    h += "<div class='ss-sec'>Rivalitas Sepanjang Masa</div><div id='ss-riv'></div>";
+    var hPel = secHead_("Peluang Juara", "peluang") + "<div id='ss-pj'></div><div class='ss-sec'>Laga Tersisa</div><div id='ss-rem'></div>";
+    var hRace = "<div class='ss-sec'>Balapan Poin</div><div id='ss-chart'></div>";
+    var hAdu = "<div class='ss-sec'>Adu Pemain</div><div id='ss-cmp'></div>";
+    var hRiv = secHead_("Rivalitas Sepanjang Masa", "rival") + "<div id='ss-riv'></div>";
 
     // ---- komposisi hasil & distribusi gol ----
     var mnang = ms.length - seri;
@@ -1148,7 +1217,11 @@
       return "<div class='ss-fact'><span>" + f[0] + "</span><span>" + f[1] + "</span></div>"; }).join("") + "</div>";
 
     h += "<p class='st-note'>Penghargaan berbasis rata-rata hanya untuk pemain dengan minimal " + STAT_MIN_MAIN + " laga. Ketuk nama atau kartu untuk membuka profil pemain. Season baru dimulai tiap awal bulan.</p>";
-    box.innerHTML = h;
+    var subs = [["ringkasan", "\u{1F4CA} Ringkasan", h], ["peluang", "\u{1F3AF} Peluang", hPel], ["balapan", "\u{1F3C1} Balapan", hRace], ["adu", "\u2694\uFE0F Adu Pemain", hAdu], ["rival", "\u{1F525} Rivalitas", hRiv]];
+    if (!subs.some(function (x) { return x[0] === statSub; })) statSub = "ringkasan";
+    box.innerHTML = hero + "<div class='ss-subbar' id='ss-subbar'>" + subs.map(function (x) {
+      return "<button data-sub='" + x[0] + "' class='" + (x[0] === statSub ? "on" : "") + "'>" + x[1] + "</button>"; }).join("") + "</div>" +
+      subs.map(function (x) { return "<div class='ss-sub" + (x[0] === statSub ? " on" : "") + "' data-sub='" + x[0] + "'>" + x[2] + "</div>"; }).join("");
     box._boards = boards;
     drawPeluang_();
     drawRem_();
@@ -1393,6 +1466,9 @@
     }
     var alive = rows.filter(function (r) { return !r.elim; });
     var out = rows.filter(function (r) { return r.elim; });
+    statShare.peluang = "\u{1F3AF} Peluang Juara SHB League (estimasi)\n" + alive.slice(0, 5).map(function (r, i) {
+      return (i + 1) + ". " + r.p.n + " - " + (r.pr >= 99.5 ? "100" : (r.pr < 1 ? "<1" : Math.round(r.pr))) + "% (" + r.p.poin + " poin, maks " + r.p.maxP + ")"; }).join("\n") +
+      "\nSisa " + totalRem + " laga.\n\n" + SITE_URL;
     el.innerHTML = "<div class='pj-sum'>" + sum + "</div>" + alive.map(function (r, i) {
       var pc = r.pr >= 99.5 ? "100%" : (r.pr < 1 ? (r.pr === 0 ? "0%" : "<1%") : Math.round(r.pr) + "%");
       return "<div class='pj-row' data-p='" + escHtml_(r.p.n) + "'><span class='rk'>" + (i + 1) + "</span><span class='nm'>" + escHtml_(r.p.n) + "</span>" +
@@ -1494,6 +1570,7 @@
 
     var h = "<p class='rv-sum'>" + info + " Format: menang &ndash; seri &ndash; kalah dari sudut pandang pemain di kiri.</p>";
     if (!list.length) { el.innerHTML = h; return; }
+    statShare.rival = "\u{1F525} Rivalitas Terpanas SHB League\n" + hot.slice(0, 3).map(function (r) { return r.a + " " + r.wa + "-" + r.d + "-" + r.wb + " " + r.b + " (" + r.n + " laga)"; }).join("\n") + "\n\n" + SITE_URL;
     h += "<div class='rv-sub'>\u{1F525} Rivalitas Terpanas</div>" + hot.map(function (r) { return card(r, false); }).join("");
     if (dom.length) h += "<div class='rv-sub'>\u{1F451} Sang Penguasa</div>" + dom.map(function (r) { return card(r, r.wb > r.wa); }).join("");
     h += "<p class='st-note'>Rivalitas terpanas = pertemuan banyak dengan rekor paling seimbang. Sang Penguasa = satu pemain menang minimal 60% dari pertemuan (minimal " + MINP + " laga). Ketuk kartu untuk membuka profil. Untuk rekor dua pemain tertentu, lihat bagian Adu Pemain di atas.</p>";
@@ -1543,6 +1620,17 @@
   (function () {
     var box = document.getElementById("statistik-body");
     box.addEventListener("click", function (e) {
+      var sh = e.target.closest ? e.target.closest(".ss-share") : null;
+      if (sh) { shareText_(sh.getAttribute("data-share")); return; }
+      var sb = e.target.closest ? e.target.closest("#ss-subbar button") : null;
+      if (sb) {
+        statSub = sb.getAttribute("data-sub");
+        Array.prototype.forEach.call(box.querySelectorAll("#ss-subbar button"), function (b) { b.classList.toggle("on", b === sb); });
+        Array.prototype.forEach.call(box.querySelectorAll(".ss-sub"), function (d) { d.classList.toggle("on", d.getAttribute("data-sub") === statSub); });
+        var bar = document.getElementById("ss-subbar"), hero = box.querySelector(".ss-hero");
+        if (bar && hero) { var top = hero.getBoundingClientRect().bottom + window.scrollY - (parseInt(getComputedStyle(document.documentElement).getPropertyValue("--tabh"), 10) || 46) - 8; if (window.scrollY > top) window.scrollTo({ top: top, behavior: "smooth" }); }
+        return;
+      }
       var lf = e.target.closest ? e.target.closest(".lt-chip") : null;
       if (lf) { statRemFilter = lf.getAttribute("data-lf"); drawRem_(); return; }
       var t = e.target.closest ? e.target.closest("#rc-play, #rc-speed") : null;
@@ -1847,6 +1935,71 @@
       loadSheetRangeByName(SHEET_RIWAYAT_KLASEMEN, RANGE_RIWAYAT_KLASEMEN, renderRiwayatKlasemen, "status-riwayat");
     }
   };
+  var tabsEl = document.getElementById("tabs"), tabInd = document.getElementById("tab-ind");
+  function placeInd_() {
+    var act = document.querySelector(".tab-btn.active");
+    if (!act || !tabInd) return;
+    tabInd.style.width = act.offsetWidth + "px";
+    tabInd.style.transform = "translateX(" + act.offsetLeft + "px)";
+    var vw = tabsEl.clientWidth, l = act.offsetLeft, r = l + act.offsetWidth;
+    if (l < tabsEl.scrollLeft || r > tabsEl.scrollLeft + vw) tabsEl.scrollTo({ left: Math.max(0, l - 16), behavior: "smooth" });
+  }
+  function moreMask_() {
+    tabsEl.classList.toggle("more", tabsEl.scrollWidth - tabsEl.clientWidth - tabsEl.scrollLeft > 8);
+    document.documentElement.style.setProperty("--tabh", tabsEl.offsetHeight + "px");
+  }
+  tabsEl.addEventListener("scroll", moreMask_);
+  window.addEventListener("resize", function () { placeInd_(); moreMask_(); });
+  setTimeout(function () { placeInd_(); moreMask_(); }, 60);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { placeInd_(); moreMask_(); });
+
+  // titik hijau "baru" pada tab yang punya laga baru sejak kunjungan terakhir
+  var DOT_VIEWS = ["hasil", "matrix", "statistik"];
+  function lsGet_(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet_(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function setDot_(view, on) {
+    var b = document.querySelector('.tab-btn[data-view="' + view + '"]');
+    if (!b) return;
+    var d = b.querySelector(".tab-dot");
+    if (on && !d) { d = document.createElement("span"); d.className = "tab-dot"; b.appendChild(d); }
+    if (!on && d) d.remove();
+  }
+  function updateNewDots_() {
+    if (!formData) return;
+    var n = formData.length;
+    DOT_VIEWS.forEach(function (v) {
+      var key = "shb_seen_" + v, seen = parseInt(lsGet_(key), 10);
+      var active = document.querySelector(".tab-btn.active");
+      var isActive = active && active.dataset.view === v;
+      if (isNaN(seen) || n < seen || isActive) { lsSet_(key, n); setDot_(v, false); return; }
+      setDot_(v, n > seen);
+    });
+  }
+  window.updateNewDots_ = updateNewDots_;
+
+  function goTab_(view) {
+    var b = document.querySelector('.tab-btn[data-view="' + view + '"]');
+    if (b) b.click();
+  }
+  (function () {
+    var x0 = null, y0 = null;
+    var BLOCK = "input,select,textarea,.matrix-scroll,.ss-chips,.lt-chips,.ss-subbar,.mx-stage,.ss-svg,.rc-ctl,.rc,.tabs,.modal-overlay,.ss-hist";
+    document.addEventListener("touchstart", function (e) {
+      if (e.touches.length !== 1 || (e.target.closest && e.target.closest(BLOCK))) { x0 = null; return; }
+      x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+    }, { passive: true });
+    document.addEventListener("touchend", function (e) {
+      if (x0 === null) return;
+      var t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+      x0 = null;
+      if (Math.abs(dx) < 70 || Math.abs(dy) > 45 || Math.abs(dx) < Math.abs(dy) * 2) return;
+      var order = Array.prototype.map.call(document.querySelectorAll(".tab-btn"), function (b) { return b.dataset.view; });
+      var cur = order.indexOf(document.querySelector(".tab-btn.active").dataset.view);
+      var nx = cur + (dx < 0 ? 1 : -1);
+      if (nx >= 0 && nx < order.length) goTab_(order[nx]);
+    }, { passive: true });
+  })();
+
   tabButtons.forEach(function (btn) {
     btn.addEventListener("click", function () {
       tabButtons.forEach(function (b) { b.classList.remove("active"); });
@@ -1858,6 +2011,8 @@
         loadedViews[view] = true;
         loaders[view]();
       }
+      placeInd_();
+      if (formData && DOT_VIEWS.indexOf(view) >= 0) { lsSet_("shb_seen_" + view, formData.length); setDot_(view, false); }
     });
   });
 

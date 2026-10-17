@@ -580,8 +580,9 @@
 .ch-btns .sec{background:transparent;color:var(--gold)}
 @media (prefers-reduced-motion:reduce){.ch-crown,.ch-eb,.ch-t,.ch-nm,.ch-pt,.ch-kasta,.ch-btns{animation:none;opacity:1}.ch-bar{animation:none;height:var(--h)}}
 
-.tk{overflow:hidden;white-space:nowrap;border:1px solid var(--pitch-line);background:var(--pitch-panel);border-radius:99px;margin:0 0 12px;padding:7px 0;display:none;position:relative}
-.tk-in{display:inline-block;padding-left:100%;animation:tkMove var(--tkd,60s) linear infinite;font-size:13px}
+.tk{overflow:hidden;white-space:nowrap;border-top:1px solid var(--pitch-line);border-bottom:1px solid var(--pitch-line);background:rgba(255,255,255,.03);margin:0 0 12px;padding:6px 0;display:none;position:relative}
+.tk-in{display:inline-block;padding-left:100%;animation:tkMove var(--tkd,60s) linear infinite;font-size:12px}
+@media(max-width:520px){.tk-in{font-size:11px}.tk-in span{margin-right:30px}}
 .tk:hover .tk-in{animation-play-state:paused}
 .tk-in span{margin-right:42px}.tk-in b{color:var(--gold)}
 @keyframes tkMove{to{transform:translateX(-100%)}}

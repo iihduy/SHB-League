@@ -266,6 +266,20 @@
 .pf-empty{font-size:13px;opacity:.6}
 .rank-move{display:block;font-size:10px;line-height:1;margin-top:2px;font-weight:700}
 .rank-move.up{color:#4ADE80}.rank-move.down{color:#E0715A}
+
+.st-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 8px}
+.st-tile{background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:8px;padding:12px 6px;text-align:center}
+.st-tile b{display:block;font-family:'Oswald',sans-serif;font-size:24px;color:var(--gold);font-weight:600}
+.st-tile span{font-size:11px;color:var(--muted)}
+.st-title{font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin:22px 0 8px}
+.st-row{display:flex;align-items:center;gap:12px;background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:8px;padding:10px 12px;margin-bottom:6px}
+.st-ico{font-size:22px;flex-shrink:0;width:30px;text-align:center}
+.st-mid{flex:1;min-width:0}
+.st-mid small{display:block;font-size:11px;color:var(--muted)}
+.st-mid div{font-weight:600;font-size:14px}
+.st-val{font-family:'Oswald',sans-serif;color:var(--gold);font-size:16px;text-align:right;white-space:nowrap}
+.st-note{font-size:11px;color:var(--muted);margin-top:10px}
+@media(max-width:520px){.st-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
@@ -289,6 +303,7 @@
     <button class="tab-btn active" data-view="klasemen">Klasemen</button>
     <button class="tab-btn" data-view="hasil">Hasil</button>
     <button class="tab-btn" data-view="matrix">Matrik Pertemuan</button>
+    <button class="tab-btn" data-view="statistik">Season Stats</button>
     <button class="tab-btn" data-view="riwayat">Riwayat</button>
   </div>
 
@@ -336,6 +351,11 @@
       <div><span class="dot lose"></span>Belum Main</div>
     </div>
     <p class="status" id="status-matrix"></p>
+  </div>
+
+  <div id="view-statistik" class="view">
+    <div id="statistik-body"><p style="text-align:center;padding:20px;color:var(--muted);">Memuat data...</p></div>
+    <p class="status" id="status-statistik"></p>
   </div>
 
   <div id="view-riwayat" class="view">
@@ -729,6 +749,80 @@
   document.getElementById("player-modal").addEventListener("click", function (e) { if (e.target === this) closeProfile(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeProfile(); });
 
+  var STAT_MIN_MAIN = 3; // minimal jumlah laga agar masuk penghargaan berbasis rata-rata
+  function escHtml_(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  function renderStatistik(table) {
+    var box = document.getElementById("statistik-body");
+    var ms = table.rows.map(function (r) {
+      return r.c.map(function (cell) { return cell ? (cell.f != null ? cell.f : cell.v) : null; });
+    }).filter(function (r) { return r[6] && String(r[6]).trim() === "Selesai"; })
+      .map(function (r) { return { home: stripBadge_(r[2]), away: stripBadge_(r[3]), sh: Number(r[4]), sa: Number(r[5]) }; });
+
+    if (!ms.length) { box.innerHTML = "<p style='text-align:center;padding:20px;color:var(--muted);'>Belum ada pertandingan selesai bulan ini.</p>"; return; }
+
+    var P = {};
+    function pl(n) { return P[n] || (P[n] = { n: n, main: 0, m: 0, s: 0, k: 0, gm: 0, gk: 0, streak: 0, best: 0 }); }
+    var totalGol = 0, seri = 0;
+    ms.forEach(function (m) {
+      totalGol += m.sh + m.sa;
+      if (m.sh === m.sa) seri++;
+      [[m.home, m.sh, m.sa], [m.away, m.sa, m.sh]].forEach(function (x) {
+        var p = pl(x[0]);
+        p.main++; p.gm += x[1]; p.gk += x[2];
+        if (x[1] > x[2]) { p.m++; p.streak++; if (p.streak > p.best) p.best = p.streak; }
+        else { p.streak = 0; if (x[1] < x[2]) p.k++; else p.s++; }
+      });
+    });
+    var list = Object.keys(P).map(function (k) { return P[k]; });
+
+    // cari pemenang (bisa lebih dari satu kalau sama), mode "max" atau "min"
+    function top(arr, fn, mode) {
+      if (!arr.length) return null;
+      var best = arr.reduce(function (a, p) { var v = fn(p); return a === null ? v : (mode === "min" ? Math.min(a, v) : Math.max(a, v)); }, null);
+      return { names: arr.filter(function (p) { return fn(p) === best; }).map(function (p) { return p.n; }), v: best };
+    }
+    var elig = list.filter(function (p) { return p.main >= STAT_MIN_MAIN; });
+    function f1(x) { return (Math.round(x * 100) / 100).toString(); }
+
+    var awards = [];
+    var t;
+    if ((t = top(list, function (p) { return p.gm; }, "max")) && t.v > 0) awards.push(["\u{1F945}", "Top Scorer", t, t.v + " gol"]);
+    if ((t = top(elig, function (p) { return Math.round(p.gk / p.main * 100); }, "min"))) awards.push(["\u{1F9F1}", "Pertahanan Terbaik", t, f1(t.v / 100) + " kebobolan/laga"]);
+    if ((t = top(elig, function (p) { return Math.round(p.gm / p.main * 100); }, "max")) && t.v > 0) awards.push(["\u{1F525}", "Paling Produktif", t, f1(t.v / 100) + " gol/laga"]);
+    if ((t = top(elig, function (p) { return Math.round(p.m / p.main * 100); }, "max")) && t.v > 0) awards.push(["\u{1F4C8}", "Win Rate Tertinggi", t, t.v + "%"]);
+    if ((t = top(list, function (p) { return p.best; }, "max")) && t.v >= 2) awards.push(["⚡", "Menang Beruntun Terpanjang", t, t.v + " kali"]);
+    if ((t = top(list, function (p) { return p.s; }, "max")) && t.v > 0) awards.push(["\u{1F91D}", "Raja Seri", t, t.v + " seri"]);
+    if ((t = top(list, function (p) { return p.main; }, "max"))) awards.push(["\u{1F3AE}", "Paling Rajin Main", t, t.v + " laga"]);
+
+    function matchLine(m) { return escHtml_(m.home) + " " + m.sh + " - " + m.sa + " " + escHtml_(m.away); }
+    var maxMargin = Math.max.apply(null, ms.map(function (m) { return Math.abs(m.sh - m.sa); }));
+    var maxGol = Math.max.apply(null, ms.map(function (m) { return m.sh + m.sa; }));
+    var big = ms.filter(function (m) { return Math.abs(m.sh - m.sa) === maxMargin; });
+    var gol = ms.filter(function (m) { return m.sh + m.sa === maxGol; });
+
+    var bulanNama = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+    var hoy = new Date();
+    var h = "<div class='st-title' style='margin-top:18px;color:var(--gold);font-size:16px;'>Season " + bulanNama[hoy.getMonth()] + " " + hoy.getFullYear() + "</div>";
+    h += "<div class='st-grid' style='margin-top:8px'>" +
+      [[ms.length, "Pertandingan"], [totalGol, "Total Gol"], [f1(totalGol / ms.length), "Gol / Laga"], [Math.round(seri / ms.length * 100) + "%", "Hasil Seri"]]
+      .map(function (x) { return "<div class='st-tile'><b>" + x[0] + "</b><span>" + x[1] + "</span></div>"; }).join("") + "</div>";
+
+    h += "<div class='st-title'>Penghargaan Bulan Ini</div>" + awards.map(function (a) {
+      return "<div class='st-row'><div class='st-ico'>" + a[0] + "</div><div class='st-mid'><small>" + a[1] + "</small><div>" +
+        a[2].names.map(escHtml_).join(", ") + "</div></div><div class='st-val'>" + a[3] + "</div></div>";
+    }).join("");
+
+    h += "<div class='st-title'>Rekor Pertandingan</div>";
+    if (maxMargin > 0) h += "<div class='st-row'><div class='st-ico'>\u{1F4A5}</div><div class='st-mid'><small>Kemenangan Terbesar</small><div>" +
+      big.map(matchLine).join("<br>") + "</div></div><div class='st-val'>selisih " + maxMargin + "</div></div>";
+    h += "<div class='st-row'><div class='st-ico'>\u{1F3AF}</div><div class='st-mid'><small>Pertandingan Paling Banyak Gol</small><div>" +
+      gol.map(matchLine).join("<br>") + "</div></div><div class='st-val'>" + maxGol + " gol</div></div>";
+
+    h += "<p class='st-note'>Penghargaan berbasis rata-rata (pertahanan, produktivitas, win rate) hanya untuk pemain dengan minimal " + STAT_MIN_MAIN + " laga. Season baru dimulai tiap awal bulan.</p>";
+    box.innerHTML = h;
+  }
+
   function renderHasil(table) {
     // kolom: No, Minggu Ke-, Home, Away, Skor Home, Skor Away, Status, Pemenang
     var rows = table.rows.map(function (r) {
@@ -798,10 +892,11 @@
 
   // ---- tab switching (lazy-load tiap tab) ----
   var tabButtons = document.querySelectorAll(".tab-btn");
-  var loadedViews = { klasemen: false, hasil: false, matrix: false, riwayat: false };
+  var loadedViews = { klasemen: false, hasil: false, matrix: false, statistik: false, riwayat: false };
   var loaders = {
     hasil: function () { loadSheetRange(GID_HASIL, RANGE_HASIL, renderHasil, "status-hasil"); },
     matrix: function () { loadSheetRange(GID_MATRIX, RANGE_MATRIX, renderMatrix, "status-matrix"); },
+    statistik: function () { loadSheetRange(GID_HASIL, RANGE_HASIL, renderStatistik, "status-statistik"); },
     riwayat: function () {
       loadSheetRangeByName(SHEET_RIWAYAT_KASTA, RANGE_RIWAYAT_KASTA, renderRiwayatKasta, "status-riwayat");
       loadSheetRangeByName(SHEET_RIWAYAT_KLASEMEN, RANGE_RIWAYAT_KLASEMEN, renderRiwayatKlasemen, "status-riwayat");
@@ -838,6 +933,7 @@
     loadSheetRange(GID_KLASEMEN, RANGE_KLASEMEN, renderKlasemen, null);
     if (loadedViews.hasil) loaders.hasil();
     if (loadedViews.matrix) loaders.matrix();
+    if (loadedViews.statistik) loaders.statistik();
   }, 60000);
 </script>
 </body>

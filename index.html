@@ -621,6 +621,35 @@
 .cd.open .cd-hint{display:none}
 @media(max-width:380px){.cd-u{min-width:34px}.cd-u b{font-size:16px}}
 @media (prefers-reduced-motion:reduce){.cd[data-ph="4"],.cd[data-ph="5"]{animation:none}.cd-u.tick b{animation:none}}
+
+/* ---- kartu pemain & lencana ---- */
+.fc-wrap{perspective:900px;display:flex;flex-direction:column;align-items:center;margin:4px 0 14px}
+.fc{position:relative;width:250px;border-radius:18px;padding:14px 16px 16px;color:var(--fcx,#2a1d03);background:linear-gradient(155deg,var(--f1),var(--f2));box-shadow:0 12px 30px rgba(0,0,0,.45),inset 0 0 0 2px rgba(255,255,255,.35);transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .15s ease-out;overflow:hidden;text-align:center}
+.fc::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.38) 48%,transparent 66%);background-size:250% 100%;background-position:var(--sx,120%) 0;pointer-events:none;transition:background-position .2s}
+.fc.t-elite{--f1:#4B2BB0;--f2:#140B3A;--fcx:#F8E7A6}
+.fc.t-gold{--f1:#F5CE6B;--f2:#B58A1C}
+.fc.t-silver{--f1:#E6EBF0;--f2:#8794A1}
+.fc.t-bronze{--f1:#E3AB78;--f2:#8A5430}
+.fc-top{display:flex;justify-content:space-between;align-items:flex-start}
+.fc-ovr b{display:block;font-family:'Oswald',sans-serif;font-size:44px;line-height:1}
+.fc-ovr i{font-style:normal;font-size:11px;letter-spacing:2px;font-weight:700}
+.fc-k{font-size:22px}
+.fc-av{margin:-6px 0 6px}
+.fc-name{font-family:'Oswald',sans-serif;font-size:22px;letter-spacing:2px;font-weight:700;border-bottom:1px solid rgba(0,0,0,.25);padding-bottom:6px;margin-bottom:8px}
+.t-elite .fc-name{border-color:rgba(248,231,166,.35)}
+.fc-attrs{display:grid;grid-template-columns:1fr 1fr;gap:2px 18px;font-family:'Oswald',sans-serif;font-size:16px;text-align:left}
+.fc-attrs div{display:flex;gap:7px}.fc-attrs b{width:24px;text-align:right}
+.fc-attrs span{opacity:.85;letter-spacing:1px;font-size:13px;align-self:center}
+.fc-foot{margin-top:8px;font-size:10px;letter-spacing:2px;opacity:.75}
+.fc-btn{margin-top:10px;font-size:12px;padding:6px 16px;border-radius:99px;border:1px solid var(--gold);background:rgba(232,179,61,.12);color:var(--gold);cursor:pointer}
+.bd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bd{text-align:center;background:rgba(255,255,255,.05);border:1px solid var(--pitch-line);border-radius:12px;padding:9px 4px 8px;position:relative}
+.bd .ic{font-size:26px;display:block}
+.bd b{display:block;font-size:11px;margin-top:2px;line-height:1.2}
+.bd small{display:block;font-size:9px;color:var(--muted);margin-top:2px;line-height:1.25}
+.bd.g1{border-color:#C98A5A}.bd.g2{border-color:#B8C2CC}.bd.g3{border-color:#E8B33D;background:rgba(232,179,61,.1)}
+.bd.lock{opacity:.4;filter:grayscale(1)}
+.bd .tr{position:absolute;top:4px;right:6px;font-size:9px;color:var(--gold);font-family:'Oswald',sans-serif}
 </style>
 </head>
 <body>
@@ -1191,6 +1220,11 @@
     var hot = Object.keys(pr).map(function (k) { return pr[k]; }).filter(function (r) { return r.n >= 2 && r.aw === r.bw; })[0];
     if (hot) out.push("\u{1F525} <i>BERITA</i> Rivalitas " + N(hot.a) + " vs " + N(hot.b) + " makin panas, skor pertemuan imbang " + hot.aw + "-" + hot.bw + ". Keduanya saling tantang di grup WhatsApp.");
 
+    try {
+      var gb = [];
+      rows.forEach(function (r) { badgesOf_(nm(r)).forEach(function (x) { if (x.lvl >= 2) gb.push({ n: nm(r), x: x }); }); });
+      if (gb.length) { var g1 = gb[h("badge") % gb.length]; out.push("\u{1F3C5} <i>LENCANA</i> " + N(g1.n) + " memegang lencana <b>" + g1.x.b.n + "</b> " + new Array(g1.x.lvl + 1).join("\u2605") + " (" + g1.x.v + ")"); }
+    } catch (e2) {}
     // pemain paling jarang main
     var few = rows.slice().sort(function (a, b) { return Number(a[2]) - Number(b[2]); })[0];
     if (few && Number(few[2]) < Number(lead[2]) - 2) out.push("\u{1F4F0} <i>BERITA</i> " + N(nm(few)) + " baru main " + few[2] + " laga. " + pick(["Manajemen mencari tahu: sibuk atau sengaja menghindar?", "Katanya sedang “pemanasan” sejak awal bulan."], "few" + nm(few)));
@@ -1360,6 +1394,105 @@
     return "<div class='pf-spark'>" + svg + "</svg></div>";
   }
 
+  // ---------- Kartu pemain & lencana ----------
+  function allMatchesOf_(nama) {
+    return statArsip.concat(formData || []).filter(function (m) { return m.home === nama || m.away === nama; });
+  }
+  function playerStats_(nama) {
+    var ms = allMatchesOf_(nama), o = { P: ms.length, W: 0, D: 0, L: 0, GF: 0, GA: 0, cs: 0, big: 0, close: 0, best4: 0, wStreak: 0, uStreak: 0, ms: ms };
+    var cw = 0, cu = 0;
+    ms.forEach(function (m) {
+      var gf = m.home === nama ? m.sh : m.sa, ga = m.home === nama ? m.sa : m.sh;
+      o.GF += gf; o.GA += ga;
+      if (ga === 0) o.cs++;
+      if (gf > o.best4) o.best4 = gf;
+      if (gf > ga) { o.W++; cw++; cu++; if (gf - ga >= 3) o.big++; } else if (gf < ga) { o.L++; cw = 0; cu = 0; if (ga - gf === 1) o.close++; } else { o.D++; cw = 0; cu++; }
+      if (cw > o.wStreak) o.wStreak = cw;
+      if (cu > o.uStreak) o.uStreak = cu;
+    });
+    return o;
+  }
+  function cardOf_(nama) {
+    var st = playerStats_(nama);
+    if (st.P < 3) return null;
+    function sh(v) { return (v * st.P + 55 * 3) / (st.P + 3); }
+    function cl(v) { return Math.max(25, Math.min(99, Math.round(v))); }
+    var atk = cl(sh(35 + st.GF / st.P * 22)), def = cl(sh(100 - st.GA / st.P * 22));
+    var win = cl(sh(30 + st.W / st.P * 70)), kon = cl(sh(30 + (st.W * 3 + st.D) / st.P / 3 * 70));
+    var l5 = st.ms.slice(-5), pts5 = 0;
+    l5.forEach(function (m) { var r = resultOf_(m, nama); pts5 += r === "w" ? 3 : (r === "d" ? 1 : 0); });
+    var frm = cl(30 + pts5 / (l5.length * 3) * 65), lag = cl(30 + st.P * 0.7);
+    var ovr = Math.round(0.22 * atk + 0.22 * def + 0.26 * win + 0.15 * frm + 0.15 * kon);
+    return { ovr: ovr, tier: ovr >= 80 ? "elite" : (ovr >= 68 ? "gold" : (ovr >= 55 ? "silver" : "bronze")), a: [["ATK", atk], ["DEF", def], ["WIN", win], ["FRM", frm], ["KON", kon], ["LAG", lag]], P: st.P };
+  }
+  function cardHtml_(nama, kastaIcon) {
+    var c = cardOf_(nama);
+    if (!c) return "<div class='pf-empty'>Kartu pemain muncul setelah minimal 3 laga.</div>";
+    return "<div class='fc-wrap'><div class='fc t-" + c.tier + "' id='fc-card'><div class='fc-top'><div class='fc-ovr'><b>" + c.ovr + "</b><i>OVR</i></div><div class='fc-k'>" + kastaIcon + "</div></div>" +
+      "<div class='fc-av'>" + avatarHtml_(nama, 84) + "</div><div class='fc-name'>" + escHtml_(nama.toUpperCase()) + "</div><div class='fc-attrs'>" +
+      c.a.map(function (x) { return "<div><b>" + x[1] + "</b><span>" + x[0] + "</span></div>"; }).join("") + "</div><div class='fc-foot'>SHB LEAGUE &middot; " + c.P + " LAGA</div></div>" +
+      "<button class='fc-btn' id='fc-share'>\u{1F4E4} Bagikan kartu</button></div>";
+  }
+  function cardImage_(nama, kastaIcon) {
+    var c = cardOf_(nama); if (!c) return;
+    var cols = { elite: ["#4B2BB0", "#140B3A", "#F8E7A6"], gold: ["#F5CE6B", "#B58A1C", "#2A1D03"], silver: ["#E6EBF0", "#8794A1", "#1d2630"], bronze: ["#E3AB78", "#8A5430", "#2a1608"] }[c.tier];
+    var W = 600, H = 840, cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    var g = cv.getContext("2d"), gr = g.createLinearGradient(0, 0, W, H); gr.addColorStop(0, cols[0]); gr.addColorStop(1, cols[1]);
+    function rr(x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+    g.fillStyle = "#0B1F17"; g.fillRect(0, 0, W, H);
+    rr(30, 30, W - 60, H - 60, 40); g.fillStyle = gr; g.fill(); g.lineWidth = 5; g.strokeStyle = "rgba(255,255,255,.45)"; g.stroke();
+    g.fillStyle = cols[2]; g.textAlign = "left"; g.font = "700 120px Oswald, Impact, sans-serif"; g.fillText(String(c.ovr), 74, 180);
+    g.font = "700 28px Oswald, sans-serif"; g.fillText("OVR", 80, 220); g.font = "56px sans-serif"; g.textAlign = "right"; g.fillText(kastaIcon || "", W - 74, 130);
+    var hsh = 0, i; for (i = 0; i < nama.length; i++) hsh = (hsh * 31 + nama.charCodeAt(i)) % 360;
+    var ag = g.createLinearGradient(220, 140, 380, 300); ag.addColorStop(0, "hsl(" + hsh + ",70%,62%)"); ag.addColorStop(1, "hsl(" + ((hsh + 40) % 360) + ",65%,46%)");
+    g.beginPath(); g.arc(300, 270, 100, 0, 7); g.fillStyle = ag; g.fill();
+    g.fillStyle = "#0B1F17"; g.textAlign = "center"; g.font = "600 76px Oswald, sans-serif"; g.fillText(nama.slice(0, 2).toUpperCase(), 300, 298);
+    g.fillStyle = cols[2]; g.font = "700 54px Oswald, sans-serif"; g.fillText(nama.toUpperCase().slice(0, 14), 300, 440);
+    g.fillRect(90, 462, 420, 3);
+    g.textAlign = "left"; c.a.forEach(function (x, k) {
+      var cx = k < 3 ? 100 : 330, cy = 540 + (k % 3) * 70;
+      g.font = "700 54px Oswald, sans-serif"; g.fillText(String(x[1]), cx, cy); g.font = "500 30px Oswald, sans-serif"; g.fillText(x[0], cx + 90, cy - 6);
+    });
+    g.textAlign = "center"; g.font = "500 22px Oswald, sans-serif"; g.fillText("SHB LEAGUE  ·  " + c.P + " LAGA", 300, 770);
+    cv.toBlob(function (blob) {
+      var file = new File([blob], "kartu-" + nama + ".png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file], text: nama + " - SHB League " + SITE_URL }).catch(function () {});
+      else { var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "kartu-" + nama + ".png"; document.body.appendChild(a); a.click(); a.remove(); }
+    });
+  }
+
+  var BADGES = [
+    { id: "hat", ic: "\u{1F3A9}", n: "Hat-trick Hero", d: "Cetak 3+ gol dalam satu laga", t: [3, 4, 5], v: function (s) { return s.best4; } },
+    { id: "wall", ic: "\u{1F9F1}", n: "Tembok Baja", d: "Clean sheet (tidak kebobolan)", t: [1, 4, 8], v: function (s) { return s.cs; } },
+    { id: "str", ic: "\u{1F525}", n: "Rentetan Menang", d: "Menang beruntun", t: [3, 5, 8], v: function (s) { return s.wStreak; } },
+    { id: "unb", ic: "\u{1F6E1}️", n: "Tak Terkalahkan", d: "Laga beruntun tanpa kalah", t: [5, 8, 12], v: function (s) { return s.uStreak; } },
+    { id: "exe", ic: "\u{1F5E1}️", n: "Algojo", d: "Menang dengan selisih 3+ gol", t: [1, 3, 6], v: function (s) { return s.big; } },
+    { id: "gun", ic: "\u{1F945}", n: "Mesin Gol", d: "Total gol sepanjang masa", t: [20, 50, 100], v: function (s) { return s.GF; } },
+    { id: "vet", ic: "\u{1F396}️", n: "Veteran", d: "Jumlah laga dimainkan", t: [20, 50, 100], v: function (s) { return s.P; } },
+    { id: "drw", ic: "\u{1F91D}", n: "Spesialis Seri", d: "Jumlah laga seri", t: [3, 6, 10], v: function (s) { return s.D; } },
+    { id: "sad", ic: "\u{1F62D}", n: "Kalah Tipis", d: "Kalah dengan selisih 1 gol", t: [3, 6, 10], v: function (s) { return s.close; } },
+    { id: "ttl", ic: "\u{1F3C6}", n: "Juara Bulanan", d: "Juara klasemen akhir bulan", t: [1, 2, 4], v: function (s) { return s.titles || 0; } },
+    { id: "k1", ic: "\u{1F947}", n: "Raja Kasta", d: "Berada di Kasta 1", t: [1, 3, 6], v: function (s) { return s.k1 || 0; } }
+  ];
+  function badgesOf_(nama) {
+    var st = playerStats_(nama);
+    var rk = riwayatKlasemenData.filter(function (r) { return r[2] === nama && Number(r[1]) === 1 && Number(r[3]) > 0; });
+    st.titles = rk.length;
+    st.k1 = riwayatKastaData.filter(function (r) { return r[1] === nama && r[5] === "Kasta 1"; }).length;
+    return BADGES.map(function (b) {
+      var v = b.v(st), lvl = v >= b.t[2] ? 3 : (v >= b.t[1] ? 2 : (v >= b.t[0] ? 1 : 0));
+      return { b: b, v: v, lvl: lvl, next: lvl < 3 ? b.t[lvl] : null };
+    });
+  }
+  function badgesHtml_(nama) {
+    var bs = badgesOf_(nama), got = bs.filter(function (x) { return x.lvl > 0; }).length;
+    return "<div class='pf-title'>Lencana <span style='text-transform:none;letter-spacing:0;opacity:.6'>(" + got + "/" + bs.length + ")</span></div><div class='bd-grid'>" +
+      bs.map(function (x) {
+        var sub = x.lvl ? (x.next ? x.v + "/" + x.next + " ke bintang berikut" : x.b.d) : x.v + "/" + x.next + " &middot; " + x.b.d;
+        return "<div class='bd " + (x.lvl ? "g" + x.lvl : "lock") + "'>" + (x.lvl ? "<span class='tr'>" + new Array(x.lvl + 1).join("★") + "</span>" : "") + "<span class='ic'>" + x.b.ic + "</span><b>" + x.b.n + "</b><small>" + sub + "</small></div>";
+      }).join("") + "</div>";
+  }
+
   function openProfile(nama) {
     var row = klasemenMap[nama];
     if (!row) return;
@@ -1371,6 +1504,8 @@
       "<div class='pf-sub' style='margin:2px 0 0'>Peringkat #" + row[0] + " &middot; " + row[9] + " poin</div></div></div>";
     var last5 = ms.slice(-5);
     if (last5.length) h += "<div class='form-guide' style='margin:0 0 12px'>" + last5.map(function (m) { return dotHtml_(resultOf_(m, nama)); }).join("") + "</div>";
+    var kIcon = (kasta === "Kasta 1" ? "\u{1F947}" : (kasta === "Kasta 2" ? "\u{1F948}" : (kasta === "Kasta 3" ? "\u{1F949}" : "\u26BD")));
+    h += cardHtml_(nama, kIcon);
     h += "<div class='pf-stats'>" +
       [["Main", row[2]], ["Menang", row[3]], ["Seri", row[4]], ["Kalah", row[5]], ["GM", row[6]], ["GK", row[7]], ["SG", row[8]], ["WR", row[2] ? Math.round(row[3] / row[2] * 100) + "%" : "0%"]]
       .map(function (x) { return "<div class='pf-stat'><b>" + x[1] + "</b>" + x[0] + "</div>"; }).join("") + "</div>";
@@ -1389,6 +1524,7 @@
     if (hl) h += "<div class='pf-title'>Sorotan Pribadi <span style='text-transform:none;letter-spacing:0;opacity:.6'>(sepanjang masa)</span></div><div class='pf-cards'>" + hl + "</div>";
 
     h += "<div class='pf-title'>Perjalanan Peringkat</div>" + rankSparkline_(nama, row[0]);
+    h += badgesHtml_(nama);
 
     h += "<div class='pf-title'>5 Pertandingan Terakhir</div>";
     var last = ms.slice(-5).reverse();
@@ -1410,6 +1546,15 @@
           return "<div class='pf-match " + resultOf_(m, nama) + "'><span>" + escHtml_(m.home) + "</span><b>" + m.sh + " - " + m.sa + "</b><span>" + escHtml_(m.away) + "</span></div>";
         }).join("") : "<div class='pf-empty'>Belum bertemu di season ini.</div>");
     });
+    var fcs = document.getElementById("fc-share"), fcc = document.getElementById("fc-card");
+    if (fcs) fcs.addEventListener("click", function () { cardImage_(nama, kIcon); });
+    if (fcc) {
+      fcc.addEventListener("pointermove", function (e) {
+        var r = fcc.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+        fcc.style.setProperty("--ry", (x * 18) + "deg"); fcc.style.setProperty("--rx", (-y * 18) + "deg"); fcc.style.setProperty("--sx", (120 - (x + 0.5) * 140) + "%");
+      });
+      fcc.addEventListener("pointerleave", function () { fcc.style.setProperty("--ry", "0deg"); fcc.style.setProperty("--rx", "0deg"); fcc.style.setProperty("--sx", "120%"); });
+    }
     document.getElementById("pf-share").addEventListener("click", function () {
       var t = "\u{1F4CA} " + nama + " - SHB League\nPeringkat #" + row[0] + " (" + row[9] + " poin)" + (kasta ? " · " + kasta : "") + "\nMain " + row[2] + ": " + row[3] + "M " + row[4] + "S " + row[5] + "K · Gol " + row[6] + "-" + row[7] +
         (last5.length ? "\nForm: " + last5.map(function (m) { return ({ w: "M", d: "S", l: "K" })[resultOf_(m, nama)]; }).join(" ") : "") + "\n\n" + SITE_URL;

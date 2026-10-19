@@ -785,6 +785,33 @@
 .dm-ch i{font-style:normal;font-family:'Oswald',sans-serif;opacity:.85}
 .dm-ch.g{border-color:rgba(74,222,128,.5)}.dm-ch.r{border-color:rgba(248,113,113,.5)}.dm-ch.x{border-color:rgba(148,163,184,.5)}
 @media (prefers-reduced-motion:reduce){#dm-list .dm-l i,#dm-list .dm-rr i,.dm-det{animation:none!important}}
+
+.py{position:relative;margin-top:12px;padding:16px 6px 14px;border-radius:18px;border:1px solid var(--pitch-line);background:radial-gradient(ellipse at 50% 0%,rgba(232,179,61,.22),transparent 55%),linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.25))}
+.py-t{margin-bottom:10px}
+.py-t:first-child .py-r{padding-top:16px}
+.py-lb{text-align:center;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:4px;color:var(--muted);opacity:.7;margin-bottom:5px;display:flex;align-items:center;gap:8px}
+.py-lb::before,.py-lb::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent)}
+.py-r{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 8px}
+.py-n{position:relative;background:none;border:0;padding:3px 2px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--chalk);min-width:54px;max-width:78px;transition:transform .25s,opacity .3s,filter .3s}
+#dm-list.anim .py-n{animation:pyDrop .6s cubic-bezier(.2,.9,.2,1) backwards}
+@keyframes pyDrop{from{opacity:0;transform:translateY(-22px) scale(.8)}}
+.py-n b{font-size:11px;font-weight:600;max-width:74px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.py-av .av{transition:box-shadow .3s}
+.py-n:active{transform:scale(.94)}
+.py-crown{position:absolute;top:-17px;left:50%;margin-left:-11px;font-size:22px;animation:chBounce 1.8s ease-in-out infinite}
+.py-n.sel{transform:scale(1.15)}.py-n.sel .av{box-shadow:0 0 0 3px #fff,0 0 22px rgba(255,255,255,.6)}
+.py-n.win .av{box-shadow:0 0 0 3px #4ADE80,0 0 18px rgba(74,222,128,.7)}
+.py-n.lose .av{box-shadow:0 0 0 3px #F87171,0 0 18px rgba(248,113,113,.7)}
+.py-n.even .av{box-shadow:0 0 0 3px #94A3B8}
+.py-n.dim{opacity:.28;filter:grayscale(.8)}
+.py-n.opp{transform:scale(1.12)}.py-n.opp .av{box-shadow:0 0 0 3px var(--gold),0 0 20px rgba(232,179,61,.8)}
+.py-rec{position:absolute;top:-4px;right:-2px;font-family:'Oswald',sans-serif;font-size:10px;padding:1px 6px;border-radius:99px;background:#0B1F17;border:1px solid currentColor;animation:ssUp .3s ease}
+.py-n.win .py-rec{color:#4ADE80}.py-n.lose .py-rec{color:#F87171}.py-n.even .py-rec{color:#94A3B8}
+.dm-bubble{position:sticky;bottom:10px;z-index:5;max-height:44vh;overflow-y:auto;box-shadow:0 -10px 26px rgba(0,0,0,.55);margin-top:10px;background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:14px;padding:12px}
+.dm-duel{display:flex;justify-content:space-around;text-align:center;margin:6px 0 8px}
+.dm-duel b{display:block;font-family:'Oswald',sans-serif;font-size:28px;color:var(--gold);line-height:1}
+.dm-duel small{font-size:10px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){#dm-list.anim .py-n,.py-crown{animation:none}}
 </style>
 </head>
 <body>
@@ -856,8 +883,8 @@
     </div>
     <div id="hasil-map" style="display:none">
       <div class="dm-scope"><button class="on" data-sc="season">Season ini</button><button data-sc="all">Sepanjang masa</button></div>
-      <div id="dm-panel"></div>
       <div id="dm-list"></div>
+      <div id="dm-panel" class="dm-bubble"></div>
     </div>
     <p class="status" id="status-hasil"></p>
   </div>
@@ -2959,58 +2986,89 @@
     var nodes = Object.keys(P).map(function (k) { return P[k]; }).sort(function (x, y) { return y.score - x.score || y.w - x.w || x.n.localeCompare(y.n); });
     return { nodes: nodes, edges: edges };
   }
+  var dmOpp = null;
   function drawDomMap_() {
     var list = document.getElementById("dm-list"), panel = document.getElementById("dm-panel");
     if (!list) return;
     var M = dmModel_(), N = M.nodes.length;
-    if (N < 2) { list.innerHTML = ""; panel.innerHTML = "<div class='pf-empty'>Belum cukup laga untuk membuat tangga.</div>"; return; }
-    var info = {};
+    if (N < 2) { list.innerHTML = ""; panel.innerHTML = "<div class='pf-empty'>Belum cukup laga untuk membuat piramida.</div>"; return; }
+    if (dmSel && !M.nodes.some(function (x) { return x.n === dmSel; })) { dmSel = null; dmOpp = null; }
+    var info = {}, pair = {};
     M.nodes.forEach(function (nd) { info[nd.n] = { win: [], lose: [], even: [], seen: {} }; });
     M.edges.forEach(function (e) {
       var ra = e.wa + "-" + e.d + "-" + e.wb, rb = e.wb + "-" + e.d + "-" + e.wa;
       var ia = info[e.a], ib = info[e.b];
       ia.seen[e.b] = 1; ib.seen[e.a] = 1;
-      if (e.even) { ia.even.push([e.b, ra]); ib.even.push([e.a, rb]); }
-      else if (e.from === e.a) { ia.win.push([e.b, ra]); ib.lose.push([e.a, rb]); }
-      else { ib.win.push([e.a, rb]); ia.lose.push([e.b, ra]); }
+      pair[e.a + "|" + e.b] = { rec: ra, gf: e.ga, ga: e.gb, n: e.n, w: e.wa, l: e.wb, d: e.d };
+      pair[e.b + "|" + e.a] = { rec: rb, gf: e.gb, ga: e.ga, n: e.n, w: e.wb, l: e.wa, d: e.d };
+      if (e.even) { ia.even.push(e.b); ib.even.push(e.a); }
+      else if (e.from === e.a) { ia.win.push(e.b); ib.lose.push(e.a); }
+      else { ib.win.push(e.a); ia.lose.push(e.b); }
     });
-    var T = N - 1, maxSide = 1;
-    M.nodes.forEach(function (nd) { maxSide = Math.max(maxSide, info[nd.n].win.length, info[nd.n].lose.length); });
-    var medal = ["\u{1F451}", "\u{1F948}", "\u{1F949}"];
-    function chip(c, cls) { return "<span class='dm-ch " + cls + "'>" + avatarHtml_(c[0], 18) + escHtml_(c[0]) + " <i>" + c[1] + "</i></span>"; }
-    var h = M.nodes.map(function (nd, i) {
-      var f = info[nd.n], open = dmSel === nd.n;
-      var rw = f.win.length / maxSide * 100, lw = f.lose.length / maxSide * 100;
-      var nv = M.nodes.filter(function (x) { return x.n !== nd.n && !f.seen[x.n]; });
-      var det = "";
-      if (open) {
-        det = "<div class='dm-det'>" +
-          (f.win.length ? "<div class='dm-g'><b style='color:#4ADE80'>Menguasai</b><div>" + f.win.map(function (c) { return chip(c, "g"); }).join("") + "</div></div>" : "") +
-          (f.lose.length ? "<div class='dm-g'><b style='color:#F87171'>Dikuasai oleh</b><div>" + f.lose.map(function (c) { return chip(c, "r"); }).join("") + "</div></div>" : "") +
-          (f.even.length ? "<div class='dm-g'><b style='color:#94A3B8'>Imbang</b><div>" + f.even.map(function (c) { return chip(c, "x"); }).join("") + "</div></div>" : "") +
-          (nv.length ? "<div class='dm-g'><b style='color:var(--muted)'>Belum bertemu</b><div style='font-size:12px;color:var(--muted)'>" + nv.map(function (x) { return escHtml_(x.n); }).join(", ") + "</div></div>" : "") +
-          "<div class='dm-note'>Angka di samping nama: menang-seri-kalah lawan pemain itu.</div></div>";
-      }
-      return "<div class='dm-row" + (open ? " open" : "") + "' data-n='" + escHtml_(nd.n) + "'>" +
-        "<div class='dm-head'><span class='dm-rk'>" + (i < 3 ? medal[i] : (i + 1)) + "</span>" + avatarHtml_(nd.n, 30) + "<b class='dm-nm'>" + escHtml_(nd.n) + "</b>" +
-        "<div class='dm-bar'><div class='dm-l'><i style='width:" + lw + "%;animation-delay:" + (i * 50) + "ms'></i><em>" + f.lose.length + "</em></div><div class='dm-ax'></div><div class='dm-rr'><i style='width:" + rw + "%;animation-delay:" + (i * 50) + "ms'></i><em>" + f.win.length + "</em></div></div></div>" + det + "</div>";
-    }).join("");
+    // tingkatan piramida: 1,2,3,4,... pemain per tingkat (dari paling dominan)
+    var tiers = [], k = 0, sz = 1;
+    while (k < N) { tiers.push(M.nodes.slice(k, k + sz)); k += sz; sz++; }
+    if (tiers.length > 1 && tiers[tiers.length - 1].length === 1 && tiers.length > 2) { tiers[tiers.length - 2].push(tiers.pop()[0]); }
+    var TN = ["TAKHTA", "ELIT", "PENANTANG", "PESAING", "PEMANAS", "DASAR"];
+    var sel = dmSel, S = sel ? info[sel] : null;
+    function stateOf(n) {
+      if (!sel) return "";
+      if (n === sel) return " sel";
+      if (S.win.indexOf(n) >= 0) return " win";
+      if (S.lose.indexOf(n) >= 0) return " lose";
+      if (S.even.indexOf(n) >= 0) return " even";
+      return " dim";
+    }
+    var delay = 0;
+    var h = "<div class='py'>" + tiers.map(function (tr, ti) {
+      var size = Math.max(40, 62 - ti * 5);
+      return "<div class='py-t'><div class='py-lb'>" + (TN[ti] || "") + "</div><div class='py-r'>" + tr.map(function (nd, ni) {
+        var st = stateOf(nd.n), rec = sel && nd.n !== sel && pair[sel + "|" + nd.n] ? pair[sel + "|" + nd.n].rec : "";
+        var d = (delay++ * 60);
+        return "<button class='py-n" + st + (dmOpp === nd.n ? " opp" : "") + "' data-n='" + escHtml_(nd.n) + "' style='animation-delay:" + d + "ms'>" +
+          (ti === 0 && ni === 0 ? "<span class='py-crown'>\u{1F451}</span>" : "") +
+          "<span class='py-av'>" + avatarHtml_(nd.n, size) + "</span><b>" + escHtml_(nd.n.length > 9 ? nd.n.slice(0, 8) + "…" : nd.n) + "</b>" + (rec ? "<span class='py-rec'>" + rec + "</span>" : "") + "</button>";
+      }).join("") + "</div></div>";
+    }).join("") + "</div>";
     list.classList.toggle("anim", !dmDrawn); dmDrawn = true;
-    list.innerHTML = "<div class='dm-cap'><span style='color:#F87171'>◂ dikuasai</span><span style='color:#4ADE80'>menguasai ▸</span></div>" + h;
+    list.innerHTML = h;
 
-    var dom = M.nodes.slice().sort(function (x, y) { return info[y.n].win.length - info[x.n].win.length; })[0];
-    var low = M.nodes.slice().sort(function (x, y) { return info[y.n].lose.length - info[x.n].lose.length; })[0];
-    var close = M.edges.filter(function (e) { return e.even && e.n >= 2; })[0];
-    panel.innerHTML = "<div class='dm-sum'><div><small>\u{1F451} Paling dominan</small><b>" + escHtml_(M.nodes[0].n) + "</b><em>menguasai " + info[M.nodes[0].n].win.length + " lawan</em></div>" +
-      "<div><small>\u{1F3AF} Paling sering dikuasai</small><b>" + escHtml_(low.n) + "</b><em>oleh " + info[low.n].lose.length + " lawan</em></div>" +
-      (close ? "<div><small>⚖️ Rivalitas imbang</small><b>" + escHtml_(close.a) + " vs " + escHtml_(close.b) + "</b><em>" + close.wa + "-" + close.d + "-" + close.wb + "</em></div>" : "") + "</div>" +
-      "<div class='dm-note' style='margin-top:8px'>Ketuk nama pemain untuk melihat siapa yang ia kuasai dan siapa yang menguasainya. “Menguasai” = lebih sering menang atas lawan itu (kalau sama, dilihat selisih gol).</div>";
+    function nm(x) { return "<b>" + escHtml_(x) + "</b>"; }
+    function names(arr) { return arr.length ? arr.map(nm).join(", ") : "<span style='color:var(--muted)'>tidak ada</span>"; }
+    var bub = "";
+    if (sel) {
+      var nv = M.nodes.filter(function (x) { return x.n !== sel && !S.seen.hasOwnProperty(x.n); }).map(function (x) { return x.n; });
+      bub = "<div class='dm-t'>" + escHtml_(sel) + "</div>";
+      if (dmOpp && pair[sel + "|" + dmOpp]) {
+        var pr = pair[sel + "|" + dmOpp], verdict = pr.w > pr.l ? sel + " unggul" : (pr.w < pr.l ? dmOpp + " unggul" : (pr.gf > pr.ga ? sel + " unggul selisih gol" : (pr.gf < pr.ga ? dmOpp + " unggul selisih gol" : "Imbang total")));
+        bub += "<div class='dm-duel'><div><b>" + pr.w + "</b><small>" + escHtml_(sel) + " menang</small></div><div><b>" + pr.d + "</b><small>seri</small></div><div><b>" + pr.l + "</b><small>" + escHtml_(dmOpp) + " menang</small></div></div>" +
+          "<div class='dm-r' style='text-align:center'>" + escHtml_(verdict) + " &middot; gol " + pr.gf + "-" + pr.ga + " &middot; " + pr.n + " pertemuan</div>";
+      } else if (dmOpp) {
+        bub += "<div class='dm-r'>" + nm(sel) + " dan " + nm(dmOpp) + " belum pernah bertemu.</div>";
+      } else {
+        bub += "<div class='dm-r'><span style='color:#4ADE80'>●</span> Menguasai: " + names(S.win) + "</div>" +
+          "<div class='dm-r'><span style='color:#F87171'>●</span> Dikuasai oleh: " + names(S.lose) + "</div>" +
+          (S.even.length ? "<div class='dm-r'><span style='color:#94A3B8'>●</span> Imbang: " + names(S.even) + "</div>" : "") +
+          (nv.length ? "<div class='dm-r' style='color:var(--muted)'>Belum bertemu: " + nv.map(escHtml_).join(", ") + "</div>" : "");
+      }
+      bub += "<div class='dm-note' style='margin-top:6px'>Angka kecil di avatar = rekor " + escHtml_(sel) + " (menang-seri-kalah) melawan pemain itu. Ketuk pemain lain untuk duel langsung, ketuk " + escHtml_(sel) + " lagi untuk reset.</div>";
+    } else {
+      var low = M.nodes.slice().sort(function (x, y) { return info[y.n].lose.length - info[x.n].lose.length; })[0];
+      var close = M.edges.filter(function (e) { return e.even && e.n >= 2; })[0];
+      bub = "<div class='dm-sum'><div><small>\u{1F451} Penguasa</small><b>" + escHtml_(M.nodes[0].n) + "</b><em>menguasai " + info[M.nodes[0].n].win.length + " lawan</em></div>" +
+        "<div><small>\u{1F3AF} Paling sering dikuasai</small><b>" + escHtml_(low.n) + "</b><em>oleh " + info[low.n].lose.length + " lawan</em></div>" +
+        (close ? "<div><small>⚖️ Rivalitas imbang</small><b>" + escHtml_(close.a) + " vs " + escHtml_(close.b) + "</b><em>" + close.wa + "-" + close.d + "-" + close.wb + "</em></div>" : "") + "</div>" +
+        "<div class='dm-note' style='margin-top:8px'>Makin ke atas, makin dominan. Ketuk satu pemain untuk melihat siapa yang ia kuasai (hijau) dan siapa yang menguasainya (merah). “Menguasai” = lebih sering menang atas lawan itu, kalau sama dilihat selisih gol.</div>";
+    }
+    panel.innerHTML = bub;
     list.onclick = function (ev) {
-      var r = ev.target.closest ? ev.target.closest(".dm-row") : null;
-      if (!r) return;
-      var n = r.getAttribute("data-n"); dmSel = dmSel === n ? null : n;
+      var b2 = ev.target.closest ? ev.target.closest(".py-n") : null;
+      if (!b2) { if (dmSel) { dmSel = null; dmOpp = null; drawDomMap_(); } return; }
+      var n = b2.getAttribute("data-n");
+      if (!dmSel) dmSel = n;
+      else if (n === dmSel) { dmSel = null; dmOpp = null; }
+      else dmOpp = dmOpp === n ? null : n;
       drawDomMap_();
-      var el = document.querySelector(".dm-row.open"); if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
     };
   }
   (function () {
@@ -3027,7 +3085,7 @@
       }
       var sc = e.target.closest ? e.target.closest(".dm-scope button") : null;
       if (sc) {
-        dmScope = sc.getAttribute("data-sc"); dmSel = null; dmDrawn = false;
+        dmScope = sc.getAttribute("data-sc"); dmSel = null; dmOpp = null; dmDrawn = false;
         Array.prototype.forEach.call(v.querySelectorAll(".dm-scope button"), function (b) { b.classList.toggle("on", b === sc); });
         ensureArsip_(); drawDomMap_();
       }

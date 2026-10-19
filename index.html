@@ -746,6 +746,18 @@
 .mc-flt{font-size:11px;padding:7px 10px;border-radius:99px;border:1px solid var(--gold);background:rgba(11,31,23,.9);color:var(--gold);cursor:pointer;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hasil-hint{text-align:center;font-size:11px;color:var(--muted);margin:6px 0 0}
 @media (prefers-reduced-motion:reduce){.sb-st{transition:none}.mcw.anim{animation:none}}
+
+.dm-scope{display:inline-flex;border:1px solid var(--pitch-line);border-radius:99px;overflow:hidden;margin:12px 0 8px}
+.dm-scope button{font-size:12px;padding:5px 14px;background:transparent;border:0;color:var(--muted);cursor:pointer}
+.dm-scope button.on{background:var(--gold);color:#0B1F17;font-weight:600}
+.dm-lg{display:inline-block;width:16px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+.dm-flow{stroke-dasharray:7 9;animation:dmFlow 1.4s linear infinite}
+@keyframes dmFlow{to{stroke-dashoffset:-32}}
+#dm-svg.dm-in{animation:dmIn .8s ease}
+@keyframes dmIn{from{opacity:0;transform:scale(.92) rotate(-6deg)}}
+.dm-t{font-family:'Oswald',sans-serif;font-size:17px;margin-bottom:6px;color:var(--gold)}
+.dm-r{font-size:13px;line-height:1.55;margin-top:4px}
+@media (prefers-reduced-motion:reduce){.dm-flow{animation:none}#dm-svg.dm-in{animation:none}}
 </style>
 </head>
 <body>
@@ -802,6 +814,8 @@
 
   <div id="view-hasil" class="view">
     <div id="hasil-stats" class="hs-row"></div>
+    <div class="rw-toggle" id="hasil-toggle" style="margin-top:12px"><button class="on" data-hv="daftar">☰ Daftar</button><button data-hv="peta">🗺️ Peta Dominasi</button></div>
+    <div id="hasil-daftar">
     <div id="hasil-hero" style="display:none"></div>
     <div class="hasil-controls">
       <input type="text" id="hasil-search" class="search-box" placeholder="Cari nama pemain..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
@@ -812,6 +826,13 @@
     <div id="hasil-chips" class="hc-row"></div>
     <div id="hasil-hint" class="hasil-hint" style="display:none">💡 Geser kartu ke kanan untuk detail, ke kiri untuk filter pemain</div>
     <div id="hasil-list"><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div></div>
+    </div>
+    <div id="hasil-map" style="display:none">
+      <div class="dm-scope"><button class="on" data-sc="season">Season ini</button><button data-sc="all">Sepanjang masa</button></div>
+      <div class="mx-stage"><svg id="dm-svg" class="mx-svg" viewBox="0 0 400 400" role="img" aria-label="Peta dominasi antar pemain"></svg></div>
+      <div class="mx-panel" id="dm-panel"></div>
+      <div class="legend"><div><span class="dm-lg" style="background:#E8B33D"></span>Menguasai (panah ke yang dikuasai)</div><div><span class="dm-lg" style="background:#94A3B8"></span>Imbang</div></div>
+    </div>
     <p class="status" id="status-hasil"></p>
   </div>
 
@@ -2197,6 +2218,7 @@
       if (statCtx) { drawCmp_(); drawRivalry_(); }
       if (profOpen) openProfile(profOpen);
       drawAwards_();
+      dmRefresh_();
     }, null);
   }
 
@@ -2740,6 +2762,7 @@
     populatePlayerFilter(allMatches);
     drawHasilStats_();
     applyHasilFilters(changed && hasilFirst);
+    dmRefresh_();
     hasilFirst = false;
   }
 
@@ -2883,6 +2906,136 @@
     }
   }
   var hasilPeeked = false;
+
+  // ---------- Peta Dominasi ----------
+  var dmScope = "season", dmSel = null, dmDrawn = false;
+  function dmPool_() {
+    var season = allMatches.map(function (r) { return { home: stripBadge_(r[2]), away: stripBadge_(r[3]), sh: Number(r[4]), sa: Number(r[5]) }; });
+    return dmScope === "all" ? statArsip.concat(season) : season;
+  }
+  function dmModel_() {
+    var pool = dmPool_(), P = {}, E = {};
+    pool.forEach(function (m) {
+      [m.home, m.away].forEach(function (n) { P[n] = P[n] || { n: n, w: 0, l: 0, d: 0, score: 0 }; });
+      var k = [m.home, m.away].sort().join("|"), a = [m.home, m.away].sort()[0], e = E[k] || (E[k] = { a: a, b: m.home === a ? m.away : m.home, wa: 0, wb: 0, d: 0, ga: 0, gb: 0 });
+      var sa = m.home === e.a ? m.sh : m.sa, sb = m.home === e.a ? m.sa : m.sh;
+      e.ga += sa; e.gb += sb;
+      if (sa > sb) { e.wa++; P[e.a].w++; P[e.b].l++; } else if (sa < sb) { e.wb++; P[e.b].w++; P[e.a].l++; } else { e.d++; P[e.a].d++; P[e.b].d++; }
+    });
+    var edges = Object.keys(E).map(function (k) {
+      var e = E[k], diff = e.wa - e.wb, gd = e.ga - e.gb, from, to;
+      if (diff > 0 || (diff === 0 && gd > 0)) { from = e.a; to = e.b; } else if (diff < 0 || gd < 0) { from = e.b; to = e.a; } else { from = e.a; to = e.b; e.even = true; }
+      e.from = from; e.to = to; e.m = Math.abs(diff); e.n = e.wa + e.wb + e.d;
+      if (!e.even && !e.m) e.soft = true; // menang selisih gol saja
+      if (!e.even) { P[from].score += (e.m || 0.5); P[to].score -= (e.m || 0.5); }
+      return e;
+    });
+    var nodes = Object.keys(P).map(function (k) { return P[k]; }).sort(function (x, y) { return y.score - x.score || y.w - x.w || x.n.localeCompare(y.n); });
+    return { nodes: nodes, edges: edges };
+  }
+  function drawDomMap_() {
+    var svg = document.getElementById("dm-svg"), panel = document.getElementById("dm-panel");
+    if (!svg) return;
+    var M = dmModel_(), N = M.nodes.length;
+    if (N < 2) { svg.innerHTML = ""; panel.innerHTML = "<div class='pf-empty'>Belum cukup laga untuk membuat peta.</div>"; return; }
+    var C = 200, R = N > 9 ? 142 : 138, pos = {}, i;
+    M.nodes.forEach(function (nd, k) { var ang = -Math.PI / 2 + k / N * 2 * Math.PI; pos[nd.n] = { x: C + R * Math.cos(ang), y: C + R * Math.sin(ang), a: ang }; });
+    var maxW = Math.max.apply(null, M.nodes.map(function (n) { return n.w; }).concat([1]));
+    function rad(nd) { return 18 + nd.w / maxW * 8; }
+    var rm = {}; M.nodes.forEach(function (n) { rm[n.n] = rad(n); });
+    var conn = {};
+    if (dmSel) M.edges.forEach(function (e) { if (e.from === dmSel || e.to === dmSel) { conn[e.from] = 1; conn[e.to] = 1; } });
+    var h = "<defs>" + [["g", "#E8B33D"], ["s", "#4ADE80"], ["r", "#F87171"], ["x", "#94A3B8"]].map(function (c) {
+      return "<marker id='dm-" + c[0] + "' viewBox='0 0 10 10' refX='8' refY='5' markerWidth='5' markerHeight='5' orient='auto-start-reverse'><path d='M0,0 L10,5 L0,10 z' fill='" + c[1] + "'/></marker>"; }).join("") + "</defs>";
+    var edgesSvg = "", hits = "";
+    M.edges.forEach(function (e, idx) {
+      var A = pos[e.from], B = pos[e.to], dx = B.x - A.x, dy = B.y - A.y, L = Math.sqrt(dx * dx + dy * dy) || 1;
+      var ux = dx / L, uy = dy / L, x1 = A.x + ux * (rm[e.from] + 2), y1 = A.y + uy * (rm[e.from] + 2), x2 = B.x - ux * (rm[e.to] + 5), y2 = B.y - uy * (rm[e.to] + 5);
+      var bend = 14, cx = (x1 + x2) / 2 - uy * bend, cy = (y1 + y2) / 2 + ux * bend;
+      var col = "g", op = 0.75;
+      if (e.even) col = "x";
+      if (dmSel) {
+        if (e.from === dmSel) { col = "s"; op = 1; } else if (e.to === dmSel) { col = "r"; op = 1; } else op = 0.07;
+      }
+      var cm = { g: "#E8B33D", s: "#4ADE80", r: "#F87171", x: "#94A3B8" }[col], w = e.even ? 1.6 : 1.4 + Math.min(5, e.m) * 1.1;
+      var d = "M" + x1.toFixed(1) + "," + y1.toFixed(1) + " Q" + cx.toFixed(1) + "," + cy.toFixed(1) + " " + x2.toFixed(1) + "," + y2.toFixed(1);
+      edgesSvg += "<path d='" + d + "' fill='none' stroke='" + cm + "' stroke-width='" + w.toFixed(1) + "' stroke-linecap='round' opacity='" + op + "'" + (e.even ? " stroke-dasharray='3 6'" : " class='dm-flow' style='animation-delay:" + ((idx % 7) * 0.12) + "s'") + (e.even ? "" : " marker-end='url(#dm-" + col + ")'") + "/>";
+      hits += "<path d='" + d + "' fill='none' stroke='transparent' stroke-width='16' data-e='" + idx + "' style='cursor:pointer'/>";
+    });
+    var nodesSvg = M.nodes.map(function (nd) {
+      var p = pos[nd.n], r = rm[nd.n], hs = 0, j;
+      for (j = 0; j < nd.n.length; j++) hs = (hs * 31 + nd.n.charCodeAt(j)) % 360;
+      var dim = dmSel && dmSel !== nd.n && !conn[nd.n] ? 0.25 : 1, ring = dmSel === nd.n ? "#fff" : "rgba(255,255,255,.35)";
+      return "<g data-n='" + escHtml_(nd.n) + "' style='cursor:pointer;opacity:" + dim + "'><circle cx='" + p.x.toFixed(1) + "' cy='" + p.y.toFixed(1) + "' r='" + (r + 4) + "' fill='hsl(" + hs + ",70%,55%)' opacity='" + (dmSel === nd.n ? ".35" : ".12") + "'/>" +
+        "<circle cx='" + p.x.toFixed(1) + "' cy='" + p.y.toFixed(1) + "' r='" + r + "' fill='hsl(" + hs + ",65%,52%)' stroke='" + ring + "' stroke-width='" + (dmSel === nd.n ? 3 : 1.5) + "'/>" +
+        "<text x='" + p.x.toFixed(1) + "' y='" + (p.y + 4).toFixed(1) + "' text-anchor='middle' font-size='" + Math.round(r * 0.7) + "' font-weight='700' fill='#0B1F17' font-family='Oswald,sans-serif'>" + escHtml_(nd.n.slice(0, 2).toUpperCase()) + "</text>" +
+        "<text x='" + p.x.toFixed(1) + "' y='" + (p.y + r + 13).toFixed(1) + "' text-anchor='middle' font-size='10.5' fill='#F3F1E7' stroke='#0B1F17' stroke-width='3' paint-order='stroke' font-family='Inter,sans-serif'>" + escHtml_(nd.n.length > 9 ? nd.n.slice(0, 8) + "…" : nd.n) + "</text></g>";
+    }).join("");
+    svg.innerHTML = h + "<circle cx='200' cy='200' r='" + (R - 6) + "' fill='none' stroke='rgba(255,255,255,.06)' stroke-dasharray='2 6'/>" +
+      "<text x='200' y='196' text-anchor='middle' fill='rgba(255,255,255,.25)' font-size='11' letter-spacing='3' font-family='Oswald,sans-serif'>PUNCAK</text><text x='200' y='212' text-anchor='middle' fill='rgba(255,255,255,.2)' font-size='9'>searah jarum jam: dari yang paling dominan</text>" +
+      edgesSvg + hits + nodesSvg;
+    if (!dmDrawn) { svg.classList.remove("dm-in"); void svg.offsetWidth; svg.classList.add("dm-in"); dmDrawn = true; }
+
+    // panel info
+    function nm(x) { return "<b>" + escHtml_(x) + "</b>"; }
+    var ph = "";
+    if (dmSel && pos[dmSel]) {
+      var win = [], lose = [], even = [], seen = {};
+      M.edges.forEach(function (e) {
+        if (e.from !== dmSel && e.to !== dmSel) return;
+        var opp = e.from === dmSel ? e.to : e.from; seen[opp] = 1;
+        var mine = e.a === dmSel ? e.wa : e.wb, th = e.a === dmSel ? e.wb : e.wa, rec = nm(opp) + " (" + mine + "-" + e.d + "-" + th + ")";
+        if (e.even) even.push(rec); else if (e.from === dmSel) win.push(rec); else lose.push(rec);
+      });
+      var nvr = M.nodes.filter(function (x) { return x.n !== dmSel && !seen[x.n]; }).map(function (x) { return escHtml_(x.n); });
+      ph = "<div class='dm-t'>" + escHtml_(dmSel) + "</div>" +
+        (win.length ? "<div class='dm-r'><span style='color:#4ADE80'>● Menguasai</span> " + win.join(", ") + "</div>" : "") +
+        (lose.length ? "<div class='dm-r'><span style='color:#F87171'>● Dikuasai</span> " + lose.join(", ") + "</div>" : "") +
+        (even.length ? "<div class='dm-r'><span style='color:#94A3B8'>● Imbang</span> " + even.join(", ") + "</div>" : "") +
+        (nvr.length ? "<div class='dm-r' style='color:var(--muted)'>Belum bertemu: " + nvr.join(", ") + "</div>" : "") +
+        "<div class='dm-r' style='color:var(--muted);font-size:11px'>Format: (menang-seri-kalah). Ketuk garis untuk rekor pertemuan, ketuk pemain lagi untuk reset.</div>";
+    } else {
+      var top = M.nodes[0], bot = M.nodes[N - 1], dom = {};
+      M.edges.forEach(function (e) { if (!e.even) dom[e.from] = (dom[e.from] || 0) + 1; });
+      var best = M.nodes.slice().sort(function (x, y) { return (dom[y.n] || 0) - (dom[x.n] || 0); })[0];
+      var close = M.edges.filter(function (e) { return e.even && e.n >= 2; })[0];
+      ph = "<div class='dm-t'>Sorotan peta</div><div class='dm-r'>\u{1F451} Paling dominan: " + nm(top.n) + (best && dom[best.n] ? " (menguasai " + dom[best.n] + " lawan)" : "") + "</div>" +
+        "<div class='dm-r'>\u{1F3AF} Paling sering dikuasai: " + nm(bot.n) + "</div>" + (close ? "<div class='dm-r'>⚖️ Rivalitas imbang: " + nm(close.a) + " vs " + nm(close.b) + "</div>" : "") +
+        "<div class='dm-r' style='color:var(--muted);font-size:11px'>Ketuk satu pemain untuk melihat siapa yang ia kuasai dan siapa yang menguasainya.</div>";
+    }
+    panel.innerHTML = ph;
+    svg.onclick = function (ev) {
+      var g = ev.target.closest ? ev.target.closest("[data-n]") : null, he = ev.target.closest ? ev.target.closest("[data-e]") : null;
+      if (g) { var n = g.getAttribute("data-n"); dmSel = dmSel === n ? null : n; drawDomMap_(); return; }
+      if (he) {
+        var e = M.edges[Number(he.getAttribute("data-e"))];
+        panel.innerHTML = "<div class='dm-t'>" + escHtml_(e.a) + " vs " + escHtml_(e.b) + "</div><div class='dm-r' style='font-size:15px'>" + nm(e.a) + " " + e.wa + " &ndash; " + e.d + " &ndash; " + e.wb + " " + nm(e.b) + "</div><div class='dm-r' style='color:var(--muted)'>" + e.n + " pertemuan &middot; gol " + e.ga + "-" + e.gb + "</div>";
+        return;
+      }
+      if (dmSel) { dmSel = null; drawDomMap_(); }
+    };
+  }
+  (function () {
+    var v = document.getElementById("view-hasil");
+    v.addEventListener("click", function (e) {
+      var t = e.target.closest ? e.target.closest("#hasil-toggle button") : null;
+      if (t) {
+        var m = t.getAttribute("data-hv");
+        Array.prototype.forEach.call(v.querySelectorAll("#hasil-toggle button"), function (b) { b.classList.toggle("on", b === t); });
+        document.getElementById("hasil-daftar").style.display = m === "daftar" ? "" : "none";
+        document.getElementById("hasil-map").style.display = m === "peta" ? "" : "none";
+        if (m === "peta") { dmDrawn = false; ensureArsip_(); drawDomMap_(); }
+        return;
+      }
+      var sc = e.target.closest ? e.target.closest(".dm-scope button") : null;
+      if (sc) {
+        dmScope = sc.getAttribute("data-sc"); dmSel = null; dmDrawn = false;
+        Array.prototype.forEach.call(v.querySelectorAll(".dm-scope button"), function (b) { b.classList.toggle("on", b === sc); });
+        ensureArsip_(); drawDomMap_();
+      }
+    });
+  })();
+  function dmRefresh_() { var m = document.getElementById("hasil-map"); if (m && m.style.display !== "none") drawDomMap_(); }
 
   function matchSheet_(i) {
     var row = allMatches[i]; if (!row) return;

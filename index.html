@@ -680,6 +680,53 @@
 .ch-aw{margin:4px 0 14px;animation:ssUp .8s 1.5s ease both}
 .ch-aw .aw-grid{grid-template-columns:1fr 1fr}.ch-aw .aw{background:rgba(255,255,255,.06)}
 @media (prefers-reduced-motion:reduce){.ch-aw{animation:none}}
+
+/* ---- hasil v2 ---- */
+.hs-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.hs{background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:12px;text-align:center;padding:9px 4px}
+.hs b{display:block;font-family:'Oswald',sans-serif;font-size:22px;color:var(--gold);line-height:1.1}
+.hs small{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+#hasil-hero{margin-top:12px}
+.hh{position:relative;cursor:pointer;border-radius:16px;padding:12px 12px 10px;border:1px solid var(--gold);background:radial-gradient(circle at 50% 0%,rgba(232,179,61,.22),transparent 65%),var(--pitch-panel);overflow:hidden}
+.hh-top{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted)}
+.hh-new{font-family:'Oswald',sans-serif;letter-spacing:2px;color:var(--gold);font-size:11px;position:relative;padding-left:12px}
+.hh-new::before{content:"";position:absolute;left:0;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:#4ADE80;animation:hhBlink 1.4s infinite}
+@keyframes hhBlink{50%{opacity:.2}}
+.hh-main{display:flex;align-items:center;gap:6px;margin:10px 0 6px}
+.hh-sc{display:flex;align-items:center;gap:6px;font-family:'Oswald',sans-serif;font-size:44px;font-weight:700;line-height:1}
+.hh-sc i{font-style:normal;opacity:.4;font-size:30px}
+.hh-com{text-align:center;font-size:12px;font-style:italic;color:var(--chalk);opacity:.9}
+.hh-tap{text-align:center;font-size:10px;color:var(--muted);margin-top:6px;letter-spacing:.5px}
+.mc-s{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;opacity:.78}
+.mc-s b{font-size:12px;font-weight:500;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mc-s.win{opacity:1}.mc-s.win b{color:var(--gold);font-weight:700}
+.mc-s.win .av{box-shadow:0 0 0 2px var(--gold),0 0 14px rgba(232,179,61,.5)}
+.hc-row{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;margin:10px 0 4px;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.hc-row::-webkit-scrollbar{display:none}
+.hc{flex-shrink:0;font-size:12px;padding:6px 12px;border-radius:99px;border:1px solid var(--pitch-line);background:var(--pitch-panel);color:var(--muted);cursor:pointer;white-space:nowrap;font-family:'Inter',sans-serif}
+.hc i{font-style:normal;opacity:.7;margin-left:2px}
+.hc.on{background:var(--gold);border-color:var(--gold);color:#0B1F17;font-weight:600}
+.mc{position:relative;cursor:pointer;margin-top:8px;background:var(--pitch-panel);border:1px solid var(--pitch-line);border-left:3px solid var(--pitch-line);border-radius:12px;padding:8px 10px 10px;transition:transform .15s,border-color .2s}
+.mc:active{transform:scale(.985)}
+.mc.k-huge,.mc.k-big{border-left-color:#F87171}.mc.k-thr{border-left-color:#A78BFA}.mc.k-close{border-left-color:#FB923C}.mc.k-draw{border-left-color:#94A3B8}.mc.k-win{border-left-color:#4ADE80}
+.mc-top{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);letter-spacing:.5px}
+.mc-main{display:flex;align-items:center;gap:6px;margin-top:4px}
+.mc-sc{font-family:'Oswald',sans-serif;font-size:26px;font-weight:700;white-space:nowrap;padding:0 6px}
+.mc-sc i{font-style:normal;opacity:.4;margin:0 3px}
+.mc.anim{animation:mcIn .45s ease backwards}
+@keyframes mcIn{from{opacity:0;transform:translateY(14px)}}
+.ms-card{max-width:380px}
+.ms-tag{text-align:center;font-size:11px;letter-spacing:1px;color:var(--gold);margin-bottom:2px}
+.ms-h2h{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.ms-bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.08)}
+.ms-bar .w{background:#4ADE80}.ms-bar .d{background:#C9A227}.ms-bar .l{background:#F87171}
+.ms-dots{display:flex;flex-wrap:wrap;gap:5px}
+.ms-dot{font-size:11px;padding:3px 7px;border-radius:6px;font-family:'Oswald',sans-serif;color:#0B1F17}
+.ms-dot.w{background:#4ADE80}.ms-dot.d{background:#C9A227}.ms-dot.l{background:#F87171}
+.ms-dot.cur{box-shadow:0 0 0 2px var(--chalk)}
+.ms-form{display:flex;justify-content:space-between;gap:10px}.ms-form small{display:block;font-size:11px;margin-bottom:3px}
+.ms-btns{text-align:center;margin-top:12px}
+@media (prefers-reduced-motion:reduce){.mc.anim,.hh-new::before{animation:none}}
 </style>
 </head>
 <body>
@@ -735,12 +782,15 @@
   </div>
 
   <div id="view-hasil" class="view">
+    <div id="hasil-stats" class="hs-row"></div>
+    <div id="hasil-hero" style="display:none"></div>
     <div class="hasil-controls">
       <input type="text" id="hasil-search" class="search-box" placeholder="Cari nama pemain..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       <select id="hasil-filter" class="filter-select">
         <option value="">Semua Pemain</option>
       </select>
     </div>
+    <div id="hasil-chips" class="hc-row"></div>
     <div id="hasil-list"><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div></div>
     <p class="status" id="status-hasil"></p>
   </div>
@@ -2652,6 +2702,8 @@
     setTimeout(ensureRiwayat_, 1800);
   })();
 
+  var hasilSig = null, hasilChip = "", hasilFirst = true;
+
   function renderHasil(table) {
     // kolom: No, Minggu Ke-, Home, Away, Skor Home, Skor Away, Status, Pemenang
     var rows = table.rows.map(function (r) {
@@ -2661,9 +2713,14 @@
       return r[6] === "Selesai" && r[2] && r[3];
     });
     completed.reverse(); // terbaru di atas
+    completed.forEach(function (r, i) { r._i = i; });
     allMatches = completed;
+    var sig = JSON.stringify(completed);
+    var changed = sig !== hasilSig; hasilSig = sig;
     populatePlayerFilter(allMatches);
-    applyHasilFilters();
+    drawHasilStats_();
+    applyHasilFilters(changed && hasilFirst);
+    hasilFirst = false;
   }
 
   function populatePlayerFilter(matches) {
@@ -2673,57 +2730,165 @@
       names[row[3]] = true;
     });
     var sorted = Object.keys(names).sort();
-    var select = document.getElementById("hasil-filter");
+    var select = document.getElementById("hasil-filter"), cur = select.value;
+    select.innerHTML = '<option value="">Semua Pemain</option>';
     sorted.forEach(function (name) {
       var opt = document.createElement("option");
       opt.value = name;
       opt.textContent = name;
       select.appendChild(opt);
     });
+    select.value = cur;
   }
 
-  function applyHasilFilters() {
+  function mTag_(sh, sa) {
+    var t = sh + sa, d = Math.abs(sh - sa);
+    if (d >= 4) return { k: "huge", l: "\u{1F4A5} Pembantaian" };
+    if (d === 3) return { k: "big", l: "\u{1F525} Telak" };
+    if (d === 0) return t === 0 ? { k: "draw", l: "\u{1F634} Seri Hambar" } : (t >= 4 ? { k: "draw", l: "\u{1F3A2} Seri Seru" } : { k: "draw", l: "\u{1F91D} Seri" });
+    if (t >= 6) return { k: "thr", l: "\u{1F3A2} Thriller" };
+    if (d === 1) return { k: "close", l: "\u{1F630} Tipis" };
+    return { k: "win", l: "✅ Menang" };
+  }
+  var HCHIPS = [["", "Semua"], ["telak", "\u{1F525} Telak"], ["seri", "\u{1F91D} Seri"], ["thr", "\u{1F3A2} Thriller"], ["tipis", "\u{1F630} Tipis"], ["cs", "\u{1F9F1} Clean Sheet"]];
+  function chipOk_(row, c) {
+    var sh = Number(row[4]), sa = Number(row[5]), d = Math.abs(sh - sa);
+    return c === "telak" ? d >= 3 : c === "seri" ? d === 0 : c === "thr" ? sh + sa >= 5 : c === "tipis" ? d === 1 : c === "cs" ? (sh === 0 || sa === 0) : true;
+  }
+
+  function countUp_(el, to, dec) {
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || el.getAttribute("data-v") === String(to)) { el.textContent = dec ? to.toFixed(dec) : to; el.setAttribute("data-v", String(to)); return; }
+    el.setAttribute("data-v", String(to));
+    var t0 = null;
+    function f(ts) { if (t0 === null) t0 = ts; var k = Math.min(1, (ts - t0) / 700), v = to * (1 - Math.pow(1 - k, 3)); el.textContent = dec ? v.toFixed(dec) : Math.round(v); if (k < 1) requestAnimationFrame(f); }
+    requestAnimationFrame(f);
+  }
+
+  function drawHasilStats_() {
+    var el = document.getElementById("hasil-stats"), n = allMatches.length;
+    if (!n) { el.innerHTML = ""; return; }
+    var g = 0, dr = 0;
+    allMatches.forEach(function (r) { g += Number(r[4]) + Number(r[5]); if (Number(r[4]) === Number(r[5])) dr++; });
+    if (!el.firstChild) el.innerHTML = "<div class='hs'><b data-s='n'>0</b><small>Laga</small></div><div class='hs'><b data-s='g'>0</b><small>Gol</small></div><div class='hs'><b data-s='a'>0</b><small>Gol / Laga</small></div><div class='hs'><b data-s='d'>0</b><small>Seri</small></div>";
+    countUp_(el.querySelector("[data-s=n]"), n); countUp_(el.querySelector("[data-s=g]"), g);
+    countUp_(el.querySelector("[data-s=a]"), g / n, 1); countUp_(el.querySelector("[data-s=d]"), dr);
+  }
+
+  function drawChips_() {
+    var el = document.getElementById("hasil-chips");
+    el.innerHTML = HCHIPS.map(function (c) {
+      var cnt = c[0] ? allMatches.filter(function (r) { return chipOk_(r, c[0]); }).length : allMatches.length;
+      return "<button class='hc" + (hasilChip === c[0] ? " on" : "") + "' data-c='" + c[0] + "'>" + c[1] + " <i>" + cnt + "</i></button>";
+    }).join("");
+  }
+
+  function applyHasilFilters(anim) {
     var q = document.getElementById("hasil-search").value.trim().toLowerCase();
     var selected = document.getElementById("hasil-filter").value;
     var filtered = allMatches.filter(function (row) {
       var matchesSearch = !q || row[2].toLowerCase().indexOf(q) !== -1 || row[3].toLowerCase().indexOf(q) !== -1;
       var matchesFilter = !selected || row[2] === selected || row[3] === selected;
-      return matchesSearch && matchesFilter;
+      return matchesSearch && matchesFilter && chipOk_(row, hasilChip);
     });
-    drawMatchList(filtered);
+    drawChips_();
+    drawMatchList(filtered, !!anim, !q && !selected && !hasilChip);
   }
 
-  function drawMatchList(matches) {
-    var html = matches.map(function (row) {
-      var home = row[2], away = row[3], scoreHome = row[4], scoreAway = row[5], winner = row[7];
-      var homeClass = "match-team home" + (winner === home ? " winner" : "");
-      var awayClass = "match-team away" + (winner === away ? " winner" : "");
-      return (
-        '<div class="match-row">' +
-        '<div class="' + homeClass + '">' + home + '</div>' +
-        '<div class="match-score">' + scoreHome + ' - ' + scoreAway + '</div>' +
-        '<div class="' + awayClass + '">' + away + '</div>' +
-        '</div>'
-      );
-    }).join("");
+  var HCOM = {
+    huge: ["Itu bukan pertandingan, itu pelajaran.", "Gawang lawan seperti pintu rumah terbuka.", "Skor yang akan diingat (dan dibahas) sampai bulan depan."],
+    big: ["Dominasi dari awal sampai akhir.", "Lawan hanya bisa menonton.", "Kemenangan yang meyakinkan."],
+    thr: ["Gol demi gol, penonton nyaris lupa bernapas.", "Pertahanan kedua tim sepertinya libur hari ini.", "Pertandingan yang seru dari awal sampai akhir."],
+    close: ["Selisih tipis, jantung berdebar sampai peluit akhir.", "Satu gol yang memisahkan senyum dan kekecewaan.", "Pertandingan ketat yang bisa berakhir ke mana saja."],
+    draw: ["Sama kuat, tidak ada yang mau mengalah.", "Pembagian angka yang adil (katanya).", "Kedua belah pihak mengaku puas, tapi tidak puas."],
+    win: ["Tiga poin yang dikerjakan dengan rapi.", "Menang dengan tenang.", "Hasil yang layak untuk sang pemenang."]
+  };
+  function hCom_(row) { var t = mTag_(Number(row[4]), Number(row[5])); var a = HCOM[t.k]; return a[(Number(row[0]) || 0) % a.length]; }
 
-    if (!matches.length) {
-      html = '<p class="match-empty">Tidak ada pertandingan yang cocok.</p>';
-    }
+  function mcSide_(name, goals, isWin) {
+    return "<div class='mc-s" + (isWin ? " win" : "") + "'>" + avatarHtml_(name, 38) + "<b>" + escHtml_(name) + "</b></div>";
+  }
+
+  function drawMatchList(matches, anim, withHero) {
+    var heroEl = document.getElementById("hasil-hero"), hero = withHero && matches.length ? matches[0] : null, list = hero ? matches.slice(1) : matches;
+    if (hero) {
+      var hh = stripBadge_(hero[2]), ha = stripBadge_(hero[3]), sh = Number(hero[4]), sa = Number(hero[5]), tg = mTag_(sh, sa);
+      heroEl.innerHTML = "<div class='hh mc-open' data-i='" + hero._i + "' data-k='" + tg.k + "'><div class='hh-top'><span class='hh-new'>LAGA TERBARU</span><span>" + tg.l + "</span></div>" +
+        "<div class='hh-main'>" + mcSide_(hh, sh, sh > sa).replace("38", "38") + "<div class='hh-sc'><b>" + sh + "</b><i>:</i><b>" + sa + "</b></div>" + mcSide_(ha, sa, sa > sh) + "</div>" +
+        "<div class='hh-com'>“" + hCom_(hero) + "”</div><div class='hh-tap'>ketuk untuk detail pertemuan ▸</div></div>";
+      heroEl.style.display = "block";
+    } else { heroEl.innerHTML = ""; heroEl.style.display = "none"; }
+    var html = list.map(function (row, idx) {
+      var home = stripBadge_(row[2]), away = stripBadge_(row[3]), sh = Number(row[4]), sa = Number(row[5]), tg = mTag_(sh, sa);
+      var dl = anim && idx < 14 ? " style='animation-delay:" + (idx * 40) + "ms'" : "";
+      return "<div class='mc mc-open k-" + tg.k + (anim ? " anim" : "") + "' data-i='" + row._i + "'" + dl + ">" +
+        "<div class='mc-top'><span>#" + escHtml_(row[0] == null ? "" : row[0]) + "</span><span class='mc-tag'>" + tg.l + "</span></div>" +
+        "<div class='mc-main'>" + mcSide_(home, sh, sh > sa) + "<div class='mc-sc'>" + sh + "<i>-</i>" + sa + "</div>" + mcSide_(away, sa, sa > sh) + "</div></div>";
+    }).join("");
+    if (!matches.length) html = '<p class="match-empty">Tidak ada pertandingan yang cocok.</p>';
     document.getElementById("hasil-list").innerHTML = html;
   }
 
-  document.getElementById("hasil-search").addEventListener("input", applyHasilFilters);
+  function matchSheet_(i) {
+    var row = allMatches[i]; if (!row) return;
+    var home = stripBadge_(row[2]), away = stripBadge_(row[3]), sh = Number(row[4]), sa = Number(row[5]), tg = mTag_(sh, sa);
+    var seasonChrono = allMatches.slice().reverse().map(function (r) { return { home: stripBadge_(r[2]), away: stripBadge_(r[3]), sh: Number(r[4]), sa: Number(r[5]), no: r[0] }; });
+    var pool = statArsip.concat(seasonChrono);
+    var pair = pool.filter(function (m) { return (m.home === home && m.away === away) || (m.home === away && m.away === home); });
+    var idx = -1, k;
+    for (k = 0; k < pair.length; k++) if (pair[k].no === row[0] && pair[k].home === home && pair[k].sh === sh && pair[k].sa === sa) idx = k;
+    var w = 0, d = 0, l = 0, dots = "";
+    pair.forEach(function (m) {
+      var mine = m.home === home ? m.sh : m.sa, th = m.home === home ? m.sa : m.sh, r = mine > th ? "w" : (mine < th ? "l" : "d");
+      if (r === "w") w++; else if (r === "l") l++; else d++;
+      dots += "<span class='ms-dot " + r + (m === pair[idx] ? " cur" : "") + "' title='" + escHtml_(m.home + " " + m.sh + "-" + m.sa + " " + m.away) + "'>" + m.sh + "-" + m.sa + "</span>";
+    });
+    var tot = pair.length || 1;
+    function formOf(n) {
+      var ms = pool.filter(function (m) { return m.home === n || m.away === n; }).slice(-5);
+      return ms.map(function (m) { return dotHtml_(resultOf_(m, n)); }).join("");
+    }
+    var facts = ["Total " + (sh + sa) + " gol", sh === sa ? "Selisih 0" : "Selisih " + Math.abs(sh - sa) + " gol"];
+    if (pair.length > 1) facts.push(idx >= 0 ? "Pertemuan ke-" + (idx + 1) : pair.length + " pertemuan");
+    if (sh === 0 || sa === 0) facts.push("Clean sheet");
+    var el = document.getElementById("mt-sheet");
+    if (!el) { el = document.createElement("div"); el.id = "mt-sheet"; el.className = "bs-ov"; document.body.appendChild(el); el.addEventListener("click", function (e) { if (e.target === el || (e.target.closest && e.target.closest(".bs-x"))) el.style.display = "none"; }); }
+    el.innerHTML = "<div class='bs-card ms-card'><button class='bs-x' aria-label='Tutup'>&times;</button><div class='ms-tag'>" + tg.l + " &middot; #" + escHtml_(row[0]) + "</div>" +
+      "<div class='hh-main'>" + mcSide_(home, sh, sh > sa) + "<div class='hh-sc'><b>" + sh + "</b><i>:</i><b>" + sa + "</b></div>" + mcSide_(away, sa, sa > sh) + "</div>" +
+      "<div class='hh-com' style='margin-bottom:8px'>“" + hCom_(row) + "”</div><div class='cd-facts' style='justify-content:center'>" + facts.map(function (f) { return "<span>" + f + "</span>"; }).join("") + "</div>" +
+      "<div class='bs-h'>Rekor pertemuan sepanjang masa</div><div class='ms-h2h'><span>" + escHtml_(home) + " " + w + "</span><span>Seri " + d + "</span><span>" + l + " " + escHtml_(away) + "</span></div>" +
+      "<div class='ms-bar'><i class='w' style='width:" + (w / tot * 100) + "%'></i><i class='d' style='width:" + (d / tot * 100) + "%'></i><i class='l' style='width:" + (l / tot * 100) + "%'></i></div>" +
+      "<div class='bs-h'>Riwayat (skor dari sisi " + escHtml_(home) + ")</div><div class='ms-dots'>" + (dots || "-") + "</div>" +
+      "<div class='bs-h'>Form 5 laga terakhir</div><div class='ms-form'><div><small>" + escHtml_(home) + "</small><div class='form-guide'>" + formOf(home) + "</div></div><div><small>" + escHtml_(away) + "</small><div class='form-guide'>" + formOf(away) + "</div></div></div>" +
+      "<div class='ms-btns'><button class='fc-btn' id='ms-share'>Bagikan ke WhatsApp</button></div></div>";
+    el.style.display = "flex";
+    document.getElementById("ms-share").onclick = function () {
+      var t = "⚽ " + home + " " + sh + "-" + sa + " " + away + " (" + tg.l.replace(/^\S+\s/, "") + ")\n“" + hCom_(row) + "”\nRekor pertemuan: " + home + " " + w + " - " + d + " - " + l + " " + away + "\n\n" + SITE_URL;
+      if (navigator.share) navigator.share({ text: t }).catch(function () {}); else window.open("https://wa.me/?text=" + encodeURIComponent(t), "_blank", "noopener");
+    };
+  }
+
+  (function () {
+    var v = document.getElementById("view-hasil");
+    v.addEventListener("click", function (e) {
+      var c = e.target.closest ? e.target.closest(".hc") : null;
+      if (c) { hasilChip = c.getAttribute("data-c"); applyHasilFilters(true); return; }
+      var m = e.target.closest ? e.target.closest(".mc-open") : null;
+      if (m) { ensureArsip_(); matchSheet_(Number(m.getAttribute("data-i"))); }
+    });
+  })();
+
+  document.getElementById("hasil-search").addEventListener("input", function () { applyHasilFilters(true); });
   document.getElementById("hasil-filter").addEventListener("change", function () {
     document.getElementById("hasil-search").value = "";
-    applyHasilFilters();
+    applyHasilFilters(true);
   });
 
   // ---- tab switching (lazy-load tiap tab) ----
   var tabButtons = document.querySelectorAll(".tab-btn");
   var loadedViews = { klasemen: false, hasil: false, matrix: false, statistik: false, riwayat: false };
   var loaders = {
-    hasil: function () { loadSheetRange(GID_HASIL, RANGE_HASIL, renderHasil, "status-hasil"); },
+    hasil: function () { loadSheetRange(GID_HASIL, RANGE_HASIL, renderHasil, "status-hasil"); ensureArsip_(); },
     matrix: function () { loadSheetRange(GID_MATRIX, RANGE_MATRIX, renderMatrix, "status-matrix"); },
     statistik: function () {
       loadSheetRange(GID_HASIL, RANGE_HASIL, renderStatistik, "status-statistik");

@@ -727,6 +727,25 @@
 .ms-form{display:flex;justify-content:space-between;gap:10px}.ms-form small{display:block;font-size:11px;margin-bottom:3px}
 .ms-btns{text-align:center;margin-top:12px}
 @media (prefers-reduced-motion:reduce){.mc.anim,.hh-new::before{animation:none}}
+
+.sb{display:flex;align-items:center;gap:6px}
+.sb i{font-style:normal;font-family:'Oswald',sans-serif;font-size:30px;color:var(--muted);opacity:.6}
+.sb-box{display:flex;gap:2px;padding:6px 7px;border-radius:8px;background:linear-gradient(#05100B 49%,#000 50%,#0A1A12 51%);border:1px solid #27483A;box-shadow:inset 0 0 12px rgba(0,0,0,.8),0 0 16px rgba(232,179,61,.12)}
+.sb-d{display:block;height:1em;width:.62em;overflow:hidden;font-family:'Oswald',sans-serif;font-size:46px;font-weight:700;line-height:1;color:var(--gold);text-shadow:0 0 10px rgba(232,179,61,.6)}
+.sb-st{display:block;transition:transform 1.3s cubic-bezier(.2,.9,.2,1) var(--dl,0s)}
+.sb-st span{display:block;height:1em;line-height:1;text-align:center}
+.sb.go .sb-st{transform:translateY(calc(var(--d) * -1em))}
+.ms-card .sb-d{font-size:40px}
+.mcw{position:relative;margin-top:8px}
+.mcw .mc{margin-top:0;touch-action:pan-y;user-select:none;-webkit-user-select:none;z-index:1}
+.mcw.anim{animation:mcIn .45s ease backwards}
+.mc.anim{animation:none}
+.mc-act{position:absolute;inset:0;border-radius:12px;display:flex;justify-content:space-between;align-items:center;overflow:hidden;background:linear-gradient(90deg,rgba(74,222,128,.25),rgba(232,179,61,.18))}
+.act-l{padding-left:16px;font-size:12px;color:#4ADE80;font-weight:600}
+.act-r{display:flex;gap:6px;padding-right:8px}
+.mc-flt{font-size:11px;padding:7px 10px;border-radius:99px;border:1px solid var(--gold);background:rgba(11,31,23,.9);color:var(--gold);cursor:pointer;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hasil-hint{text-align:center;font-size:11px;color:var(--muted);margin:6px 0 0}
+@media (prefers-reduced-motion:reduce){.sb-st{transition:none}.mcw.anim{animation:none}}
 </style>
 </head>
 <body>
@@ -791,6 +810,7 @@
       </select>
     </div>
     <div id="hasil-chips" class="hc-row"></div>
+    <div id="hasil-hint" class="hasil-hint" style="display:none">💡 Geser kartu ke kanan untuk detail, ke kiri untuk filter pemain</div>
     <div id="hasil-list"><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div></div>
     <p class="status" id="status-hasil"></p>
   </div>
@@ -2805,6 +2825,28 @@
   };
   function hCom_(row) { var t = mTag_(Number(row[4]), Number(row[5])); var a = HCOM[t.k]; return a[(Number(row[0]) || 0) % a.length]; }
 
+  function sbHtml_(sh, sa) {
+    function dig(n, base) {
+      return String(n).split("").map(function (ch, i) {
+        var strip = ""; for (var k = 0; k <= 9; k++) strip += "<span>" + k + "</span>";
+        return "<span class='sb-d'><span class='sb-st' style='--d:" + ch + ";--dl:" + (base + i * 0.12) + "s'>" + strip + "</span></span>";
+      }).join("");
+    }
+    return "<div class='sb'><div class='sb-box'>" + dig(sh, 0) + "</div><i>:</i><div class='sb-box'>" + dig(sa, 0.25) + "</div></div>";
+  }
+  function sbGo_(root) {
+    var els = root.querySelectorAll ? root.querySelectorAll(".sb") : [];
+    Array.prototype.forEach.call(els, function (el) {
+      if (el.classList.contains("go")) return;
+      var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (reduce || !("IntersectionObserver" in window)) { el.classList.add("go"); return; }
+      var io = new IntersectionObserver(function (en) {
+        if (en[0].isIntersecting) { setTimeout(function () { el.classList.add("go"); }, 250); io.disconnect(); }
+      }, { threshold: 0.6 });
+      io.observe(el);
+    });
+  }
+
   function mcSide_(name, goals, isWin) {
     return "<div class='mc-s" + (isWin ? " win" : "") + "'>" + avatarHtml_(name, 38) + "<b>" + escHtml_(name) + "</b></div>";
   }
@@ -2813,21 +2855,34 @@
     var heroEl = document.getElementById("hasil-hero"), hero = withHero && matches.length ? matches[0] : null, list = hero ? matches.slice(1) : matches;
     if (hero) {
       var hh = stripBadge_(hero[2]), ha = stripBadge_(hero[3]), sh = Number(hero[4]), sa = Number(hero[5]), tg = mTag_(sh, sa);
-      heroEl.innerHTML = "<div class='hh mc-open' data-i='" + hero._i + "' data-k='" + tg.k + "'><div class='hh-top'><span class='hh-new'>LAGA TERBARU</span><span>" + tg.l + "</span></div>" +
-        "<div class='hh-main'>" + mcSide_(hh, sh, sh > sa).replace("38", "38") + "<div class='hh-sc'><b>" + sh + "</b><i>:</i><b>" + sa + "</b></div>" + mcSide_(ha, sa, sa > sh) + "</div>" +
-        "<div class='hh-com'>“" + hCom_(hero) + "”</div><div class='hh-tap'>ketuk untuk detail pertemuan ▸</div></div>";
+      var hsig = hero[0] + "|" + sh + "|" + sa;
+      if (heroEl.getAttribute("data-sig") !== hsig || !heroEl.firstChild) {
+        heroEl.setAttribute("data-sig", hsig);
+        heroEl.innerHTML = "<div class='hh mc-open' data-i='" + hero._i + "' data-k='" + tg.k + "'><div class='hh-top'><span class='hh-new'>LAGA TERBARU</span><span>" + tg.l + "</span></div>" +
+          "<div class='hh-main'>" + mcSide_(hh, sh, sh > sa) + sbHtml_(sh, sa) + mcSide_(ha, sa, sa > sh) + "</div>" +
+          "<div class='hh-com'>\u201C" + hCom_(hero) + "\u201D</div><div class='hh-tap'>ketuk untuk detail pertemuan \u25B8</div></div>";
+        sbGo_(heroEl);
+      } else { heroEl.firstChild.setAttribute("data-i", hero._i); }
       heroEl.style.display = "block";
-    } else { heroEl.innerHTML = ""; heroEl.style.display = "none"; }
+    } else { heroEl.innerHTML = ""; heroEl.removeAttribute("data-sig"); heroEl.style.display = "none"; }
     var html = list.map(function (row, idx) {
       var home = stripBadge_(row[2]), away = stripBadge_(row[3]), sh = Number(row[4]), sa = Number(row[5]), tg = mTag_(sh, sa);
       var dl = anim && idx < 14 ? " style='animation-delay:" + (idx * 40) + "ms'" : "";
-      return "<div class='mc mc-open k-" + tg.k + (anim ? " anim" : "") + "' data-i='" + row._i + "'" + dl + ">" +
+      return "<div class='mcw" + (anim ? " anim" : "") + "'" + dl + "><div class='mc-act'><div class='act-l'>\u{1F4CB} Detail \u25B8</div><div class='act-r'><button class='mc-flt' data-n='" + escHtml_(home) + "'>\u{1F50D} " + escHtml_(home) + "</button><button class='mc-flt' data-n='" + escHtml_(away) + "'>\u{1F50D} " + escHtml_(away) + "</button></div></div>" +
+        "<div class='mc mc-open k-" + tg.k + "' data-i='" + row._i + "'>" +
         "<div class='mc-top'><span>#" + escHtml_(row[0] == null ? "" : row[0]) + "</span><span class='mc-tag'>" + tg.l + "</span></div>" +
-        "<div class='mc-main'>" + mcSide_(home, sh, sh > sa) + "<div class='mc-sc'>" + sh + "<i>-</i>" + sa + "</div>" + mcSide_(away, sa, sa > sh) + "</div></div>";
+        "<div class='mc-main'>" + mcSide_(home, sh, sh > sa) + "<div class='mc-sc'>" + sh + "<i>-</i>" + sa + "</div>" + mcSide_(away, sa, sa > sh) + "</div></div></div>";
     }).join("");
     if (!matches.length) html = '<p class="match-empty">Tidak ada pertandingan yang cocok.</p>';
     document.getElementById("hasil-list").innerHTML = html;
+    var hint = document.getElementById("hasil-hint");
+    if (hint) hint.style.display = (matches.length > 1 && !lsGet_("shb_swipe_seen")) ? "block" : "none";
+    if (anim && matches.length > 1 && !lsGet_("shb_swipe_seen") && !hasilPeeked) {
+      hasilPeeked = true;
+      setTimeout(function () { var f = document.querySelector("#hasil-list .mc"); if (f) { f.style.transition = "transform .35s"; f.style.transform = "translateX(-34px)"; setTimeout(function () { f.style.transform = ""; }, 600); } }, 900);
+    }
   }
+  var hasilPeeked = false;
 
   function matchSheet_(i) {
     var row = allMatches[i]; if (!row) return;
@@ -2854,7 +2909,7 @@
     var el = document.getElementById("mt-sheet");
     if (!el) { el = document.createElement("div"); el.id = "mt-sheet"; el.className = "bs-ov"; document.body.appendChild(el); el.addEventListener("click", function (e) { if (e.target === el || (e.target.closest && e.target.closest(".bs-x"))) el.style.display = "none"; }); }
     el.innerHTML = "<div class='bs-card ms-card'><button class='bs-x' aria-label='Tutup'>&times;</button><div class='ms-tag'>" + tg.l + " &middot; #" + escHtml_(row[0]) + "</div>" +
-      "<div class='hh-main'>" + mcSide_(home, sh, sh > sa) + "<div class='hh-sc'><b>" + sh + "</b><i>:</i><b>" + sa + "</b></div>" + mcSide_(away, sa, sa > sh) + "</div>" +
+      "<div class='hh-main'>" + mcSide_(home, sh, sh > sa) + sbHtml_(sh, sa) + mcSide_(away, sa, sa > sh) + "</div>" +
       "<div class='hh-com' style='margin-bottom:8px'>“" + hCom_(row) + "”</div><div class='cd-facts' style='justify-content:center'>" + facts.map(function (f) { return "<span>" + f + "</span>"; }).join("") + "</div>" +
       "<div class='bs-h'>Rekor pertemuan sepanjang masa</div><div class='ms-h2h'><span>" + escHtml_(home) + " " + w + "</span><span>Seri " + d + "</span><span>" + l + " " + escHtml_(away) + "</span></div>" +
       "<div class='ms-bar'><i class='w' style='width:" + (w / tot * 100) + "%'></i><i class='d' style='width:" + (d / tot * 100) + "%'></i><i class='l' style='width:" + (l / tot * 100) + "%'></i></div>" +
@@ -2862,15 +2917,66 @@
       "<div class='bs-h'>Form 5 laga terakhir</div><div class='ms-form'><div><small>" + escHtml_(home) + "</small><div class='form-guide'>" + formOf(home) + "</div></div><div><small>" + escHtml_(away) + "</small><div class='form-guide'>" + formOf(away) + "</div></div></div>" +
       "<div class='ms-btns'><button class='fc-btn' id='ms-share'>Bagikan ke WhatsApp</button></div></div>";
     el.style.display = "flex";
+    requestAnimationFrame(function () { setTimeout(function () { var b = el.querySelector(".sb"); if (b) b.classList.add("go"); }, 200); });
     document.getElementById("ms-share").onclick = function () {
       var t = "⚽ " + home + " " + sh + "-" + sa + " " + away + " (" + tg.l.replace(/^\S+\s/, "") + ")\n“" + hCom_(row) + "”\nRekor pertemuan: " + home + " " + w + " - " + d + " - " + l + " " + away + "\n\n" + SITE_URL;
       if (navigator.share) navigator.share({ text: t }).catch(function () {}); else window.open("https://wa.me/?text=" + encodeURIComponent(t), "_blank", "noopener");
     };
   }
 
+  var swipeBlock = false, swOpen = null;
+  function swClose_() { if (swOpen) { swOpen.style.transition = "transform .25s"; swOpen.style.transform = ""; swOpen.classList.remove("sw-open"); swOpen = null; } }
+  (function () {
+    var list = document.getElementById("hasil-list"), st = null;
+    list.addEventListener("pointerdown", function (e) {
+      var c = e.target.closest ? e.target.closest(".mc") : null;
+      if (!c || (e.target.closest && e.target.closest("button"))) return;
+      if (swOpen && swOpen !== c) swClose_();
+      st = { el: c, x: e.clientX, y: e.clientY, dx: 0, lock: "", base: c.classList.contains("sw-open") ? -150 : 0, id: e.pointerId };
+    });
+    list.addEventListener("pointermove", function (e) {
+      if (!st) return;
+      var dx = e.clientX - st.x, dy = e.clientY - st.y;
+      if (!st.lock) {
+        if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) { st.lock = "x"; try { st.el.setPointerCapture(st.id); } catch (e1) {} st.el.style.transition = "none"; }
+        else if (Math.abs(dy) > 8) { st = null; return; }
+        else return;
+      }
+      st.dx = dx;
+      var t = Math.max(-170, Math.min(120, st.base + dx));
+      st.el.style.transform = "translateX(" + t + "px)";
+    });
+    function end() {
+      if (!st) return;
+      var s2 = st; st = null;
+      if (s2.lock !== "x") return;
+      swipeBlock = true; setTimeout(function () { swipeBlock = false; }, 350);
+      lsSet_("shb_swipe_seen", "1"); var hint = document.getElementById("hasil-hint"); if (hint) hint.style.display = "none";
+      var tot = s2.base + s2.dx, el = s2.el;
+      el.style.transition = "transform .25s";
+      if (tot > 70) { el.style.transform = ""; el.classList.remove("sw-open"); if (swOpen === el) swOpen = null; ensureArsip_(); matchSheet_(Number(el.getAttribute("data-i"))); }
+      else if (tot < -70) { el.style.transform = "translateX(-150px)"; el.classList.add("sw-open"); swOpen = el; }
+      else { el.style.transform = ""; el.classList.remove("sw-open"); if (swOpen === el) swOpen = null; }
+    }
+    list.addEventListener("pointerup", end);
+    list.addEventListener("pointercancel", end);
+    list.addEventListener("click", function (e) {
+      var f = e.target.closest ? e.target.closest(".mc-flt") : null;
+      if (f) {
+        var sel = document.getElementById("hasil-filter");
+        sel.value = f.getAttribute("data-n"); document.getElementById("hasil-search").value = "";
+        swOpen = null; applyHasilFilters(true);
+        window.scrollTo({ top: Math.max(0, document.getElementById("hasil-stats").getBoundingClientRect().top + window.scrollY - 70), behavior: "smooth" });
+      }
+    });
+  })();
+
   (function () {
     var v = document.getElementById("view-hasil");
     v.addEventListener("click", function (e) {
+      if (swipeBlock) return;
+      var oc = e.target.closest ? e.target.closest(".mc.sw-open") : null;
+      if (oc) { swClose_(); return; }
       var c = e.target.closest ? e.target.closest(".hc") : null;
       if (c) { hasilChip = c.getAttribute("data-c"); applyHasilFilters(true); return; }
       var m = e.target.closest ? e.target.closest(".mc-open") : null;

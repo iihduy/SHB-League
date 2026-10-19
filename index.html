@@ -14,6 +14,12 @@
 <meta name="twitter:card" content="summary">
 
 <link rel="icon" type="image/png" href="logo.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0B1F17">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SHB League">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -556,9 +562,9 @@
 .hof-champ{display:flex;justify-content:space-between;padding:8px 2px;border-bottom:1px dashed var(--pitch-line);font-size:13px}
 .hof-champ b{color:var(--gold)}
 /* ---- layar juara ---- */
-.ch-overlay{position:fixed;inset:0;z-index:2000;background:radial-gradient(circle at 50% 30%,rgba(232,179,61,.22),rgba(5,16,11,.96) 70%);display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto}
+.ch-overlay{position:fixed;inset:0;z-index:2000;background:radial-gradient(circle at 50% 30%,rgba(232,179,61,.25),rgba(5,16,11,0) 70%),#06130D;display:flex;padding:18px;overflow-y:auto}
 .ch-overlay canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
-.ch-card{position:relative;max-width:420px;width:100%;text-align:center;color:var(--chalk)}
+.ch-card{position:relative;max-width:420px;width:100%;margin:auto;text-align:center;color:var(--chalk)}
 .ch-eb{font-family:'Oswald',sans-serif;letter-spacing:3px;color:var(--gold);font-size:13px;animation:ssUp .8s ease both}
 .ch-t{font-family:'Oswald',sans-serif;font-size:34px;font-weight:700;line-height:1.1;margin:6px 0 4px;animation:ssUp .8s .2s ease both}
 .ch-crown{font-size:56px;animation:chBounce 1.6s ease-in-out infinite}
@@ -666,6 +672,14 @@
 .bs-row{display:flex;justify-content:space-between;font-size:12px;padding:5px 2px;border-bottom:1px dashed var(--pitch-line);opacity:.6}
 .bs-row.ok{opacity:1;color:var(--gold)}
 @media (prefers-reduced-motion:reduce){.bs-card{animation:none}}
+
+.aw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.aw{background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:12px;padding:10px 10px 9px;text-align:center}
+.aw .ic{font-size:24px;display:block}.aw small{display:block;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.aw b{display:block;font-size:14px;margin-top:2px}.aw em{display:block;font-style:normal;font-size:11px;color:var(--gold);margin-top:2px}
+.ch-aw{margin:4px 0 14px;animation:ssUp .8s 1.5s ease both}
+.ch-aw .aw-grid{grid-template-columns:1fr 1fr}.ch-aw .aw{background:rgba(255,255,255,.06)}
+@media (prefers-reduced-motion:reduce){.ch-aw{animation:none}}
 </style>
 </head>
 <body>
@@ -780,6 +794,7 @@
     <div id="riwayat-stats" class="riwayat-stats"></div>
 
     <div id="riwayat-kasta-groups" class="kasta-groups"></div>
+    <div id="riwayat-awards"></div>
     </div>
 
     <p class="status" id="status-riwayat"></p>
@@ -2111,6 +2126,7 @@
       statArsipOk = true;
       if (statCtx) { drawCmp_(); drawRivalry_(); }
       if (profOpen) openProfile(profOpen);
+      drawAwards_();
     }, null);
   }
 
@@ -2447,7 +2463,53 @@
     });
   })();
 
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+  }
+
+  // ---------- Penghargaan bulanan ----------
+  function awardsFor_(bulan) {
+    var rk = riwayatKlasemenData.filter(function (r) { return r[0] === bulan && Number(r[3]) > 0 && r[2] !== "Nama"; });
+    var ms = statArsip.filter(function (m) { return m.bulan === bulan; }), out = [];
+    function top(fn, min) { var b = null; rk.forEach(function (r) { var v = fn(r); if (v === null || isNaN(v)) return; if (b === null || (min ? v < b.v : v > b.v)) b = { v: v, r: r }; }); return b; }
+    var a = top(function (r) { return Number(r[7]); });
+    if (a && a.v > 0) out.push(["⚽", "Top Skor", a.r[2], a.v + " gol"]);
+    a = top(function (r) { return Number(r[3]) >= 4 ? Number(r[8]) / Number(r[3]) : null; }, true);
+    if (a) out.push(["\u{1F9F1}", "Tembok Terbaik", a.r[2], a.r[8] + " kebobolan / " + a.r[3] + " laga"]);
+    a = top(function (r) { return Number(r[4]); });
+    if (a && a.v > 0) out.push(["\u{1F451}", "Raja Kemenangan", a.r[2], a.v + " menang"]);
+    a = top(function (r) { return Number(r[5]); });
+    if (a && a.v >= 2) out.push(["\u{1F91D}", "Raja Seri", a.r[2], a.v + " kali seri"]);
+    if (ms.length) {
+      var bg = null, tg = null, sad = {};
+      ms.forEach(function (m) {
+        var d = Math.abs(m.sh - m.sa), t = m.sh + m.sa;
+        if (d > 0 && (!bg || d > bg.d)) bg = { d: d, m: m };
+        if (!tg || t > tg.t) tg = { t: t, m: m };
+        if (d === 1) { var lo = m.sh < m.sa ? m.home : m.away; sad[lo] = (sad[lo] || 0) + 1; }
+      });
+      if (bg && bg.d >= 2) out.push(["\u{1F4A5}", "Kemenangan Terbesar", bg.m.home + " " + bg.m.sh + "-" + bg.m.sa + " " + bg.m.away, "selisih " + bg.d + " gol"]);
+      if (tg && tg.t >= 4) out.push(["\u{1F3A2}", "Laga Terseru", tg.m.home + " " + tg.m.sh + "-" + tg.m.sa + " " + tg.m.away, tg.t + " gol tercipta"]);
+      var ss = Object.keys(sad).sort(function (x, y) { return sad[y] - sad[x]; })[0];
+      if (ss && sad[ss] >= 2) out.push(["\u{1F62D}", "Paling Sial", ss, "kalah tipis " + sad[ss] + "x"]);
+    }
+    return out;
+  }
+  function awardsHtml_(bulan, compact) {
+    var a = awardsFor_(bulan);
+    if (!a.length) return "";
+    return (compact ? "" : "<div class='ss-sec'>Penghargaan " + escHtml_(bulan) + "</div>") + "<div class='aw-grid'>" + a.slice(0, compact ? 4 : 9).map(function (x) {
+      return "<div class='aw'><span class='ic'>" + x[0] + "</span><small>" + x[1] + "</small><b>" + escHtml_(x[2]) + "</b><em>" + escHtml_(x[3]) + "</em></div>"; }).join("") + "</div>";
+  }
+  function drawAwards_() {
+    var el = document.getElementById("riwayat-awards"), sel = document.getElementById("riwayat-bulan");
+    if (el && sel && sel.value) el.innerHTML = awardsHtml_(sel.value, false);
+    var ch = document.getElementById("ch-awards");
+    if (ch && ch.getAttribute("data-b")) ch.innerHTML = awardsHtml_(ch.getAttribute("data-b"), true);
+  }
+
   function onRiwayatReady_() {
+    ensureArsip_(); drawAwards_();
     if (profOpen) openProfile(profOpen);
     if (document.getElementById("rw-hof") && document.getElementById("rw-hof").style.display !== "none") drawHof_();
     maybeShowChampion_();
@@ -2553,9 +2615,10 @@
     el.innerHTML = "<canvas id='ch-cv'></canvas><div class='ch-card'><div class='ch-crown'>\u{1F451}</div><div class='ch-eb'>JUARA SEASON</div><div class='ch-t'>" + escHtml_(String(latest).toUpperCase()) + "</div>" +
       "<div style='color:var(--gold);font-family:Oswald,sans-serif;font-size:20px;animation:ssUp .8s .4s ease both'>" + escHtml_(by[1][2]) + "</div>" +
       "<div class='ch-pod'>" + col(2, "\u{1F948}") + col(1, "\u{1F3C6}") + col(3, "\u{1F949}") + "</div>" +
-      (k1.length ? "<div class='ch-kasta'>\u{1F947} Kasta 1: <b>" + k1.map(escHtml_).join(", ") + "</b></div>" : "") +
+      "<div id='ch-awards' data-b='" + escHtml_(String(latest)) + "' class='ch-aw'></div>" + (k1.length ? "<div class='ch-kasta'>\u{1F947} Kasta 1: <b>" + k1.map(escHtml_).join(", ") + "</b></div>" : "") +
       "<div class='ch-btns'><button class='sec' id='ch-close'>Tutup</button><button class='pri' id='ch-more'>Lihat Hasil Lengkap</button></div></div>";
     el.style.display = "flex";
+    drawAwards_();
     confetti_(document.getElementById("ch-cv"));
     function close() { el.style.display = "none"; lsSet_("shb_champ_seen", String(latest)); }
     document.getElementById("ch-close").onclick = close;
@@ -2755,6 +2818,7 @@
   document.getElementById("riwayat-bulan").addEventListener("change", function (e) {
     renderPodium(e.target.value);
     renderKastaGroups(e.target.value);
+    drawAwards_();
   });
 
   loadPengumuman();

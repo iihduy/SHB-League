@@ -587,6 +587,40 @@
 .tk-in span{margin-right:42px}.tk-in b{color:var(--gold)}
 @keyframes tkMove{to{transform:translateX(-100%)}}
 @media (prefers-reduced-motion:reduce){.tk{overflow-x:auto}.tk-in{animation:none;padding-left:12px}}
+
+/* ---- countdown reset ---- */
+.cd{position:relative;margin:0 0 12px;border-radius:14px;border:1px solid var(--pitch-line);background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.015));overflow:hidden;cursor:pointer;--ac:#4ADE80;transition:border-color .4s,box-shadow .4s}
+.cd[data-ph="2"]{--ac:#E8B33D}.cd[data-ph="3"]{--ac:#FB923C}.cd[data-ph="4"]{--ac:#F87171}.cd[data-ph="5"]{--ac:#F87171}
+.cd[data-ph="4"],.cd[data-ph="5"]{border-color:var(--ac);animation:cdPulse 2s ease-in-out infinite}
+.cd[data-ph="5"]{animation-duration:.9s}
+@keyframes cdPulse{0%,100%{box-shadow:0 0 0 rgba(248,113,113,0)}50%{box-shadow:0 0 22px rgba(248,113,113,.35)}}
+.cd::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 12% 0%,color-mix(in srgb,var(--ac) 22%,transparent),transparent 60%);pointer-events:none}
+.cd-top{position:relative;display:flex;align-items:center;gap:10px;padding:10px 12px}
+.cd-lbl{flex:1;min-width:0}
+.cd-lbl small{display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ac);font-weight:600}
+.cd-lbl span{font-size:12px;color:var(--chalk);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cd-units{display:flex;gap:5px}
+.cd-u{min-width:40px;text-align:center;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:3px 4px}
+.cd-u b{display:block;font-family:'Oswald',sans-serif;font-size:19px;line-height:1.15;color:var(--chalk);font-variant-numeric:tabular-nums}
+.cd-u i{display:block;font-style:normal;font-size:8px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.cd-u.tick b{animation:cdTick .4s ease}
+@keyframes cdTick{0%{transform:translateY(-6px);opacity:.2;color:var(--ac)}100%{transform:none;opacity:1}}
+.cd-bar{position:relative;height:3px;background:rgba(255,255,255,.07)}
+.cd-bar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--ac),#fff);width:0;transition:width 1s}
+.cd-more{position:relative;display:none;padding:4px 14px 14px;font-size:13px}
+.cd.open .cd-more{display:block;animation:ssUp .5s ease}
+.cd-msg{font-size:13px;line-height:1.5;margin:6px 0 10px;color:var(--chalk)}
+.cd-pod{display:flex;gap:6px;margin-bottom:10px}
+.cd-pod div{flex:1;text-align:center;background:rgba(0,0,0,.25);border-radius:10px;padding:8px 4px;border:1px solid transparent;min-width:0}
+.cd-pod div:first-child{border-color:var(--ac)}
+.cd-pod .m{font-size:18px}.cd-pod b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cd-pod span{font-family:'Oswald',sans-serif;color:var(--gold);font-size:13px}
+.cd-facts{display:flex;flex-wrap:wrap;gap:6px}
+.cd-facts span{font-size:11px;padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.07)}
+.cd-hint{position:relative;text-align:center;font-size:10px;color:var(--muted);padding:0 0 6px;letter-spacing:.5px}
+.cd.open .cd-hint{display:none}
+@media(max-width:380px){.cd-u{min-width:34px}.cd-u b{font-size:16px}}
+@media (prefers-reduced-motion:reduce){.cd[data-ph="4"],.cd[data-ph="5"]{animation:none}.cd-u.tick b{animation:none}}
 </style>
 </head>
 <body>
@@ -604,6 +638,14 @@
   <div id="announcement-banner" class="announcement" style="display:none;">
     <span id="announcement-text"></span>
     <button id="announcement-close" class="announcement-close" aria-label="Tutup">&times;</button>
+  </div>
+
+  <div class="cd" id="countdown" data-ph="1" style="display:none">
+    <div class="cd-top"><div class="cd-lbl"><small id="cd-ph">Reset bulanan</small><span id="cd-sub"></span></div>
+      <div class="cd-units"><div class="cd-u" data-u="d"><b>--</b><i>hari</i></div><div class="cd-u" data-u="h"><b>--</b><i>jam</i></div><div class="cd-u" data-u="m"><b>--</b><i>mnt</i></div><div class="cd-u" data-u="s"><b>--</b><i>dtk</i></div></div></div>
+    <div class="cd-bar"><i id="cd-fill"></i></div>
+    <div class="cd-hint">ketuk untuk detail ▾</div>
+    <div class="cd-more" id="cd-more"></div>
   </div>
 
   <div class="tk" id="ticker"><div class="tk-in" id="ticker-in"></div></div>
@@ -1155,6 +1197,62 @@
     return out;
   }
 
+  // ---------- Countdown reset bulanan (reset: hari terakhir bulan 17:00 WIB) ----------
+  var cdLast = {}, cdTimer = null;
+  function cdTarget_() {
+    var w = new Date(Date.now() + 7 * 3600e3), y = w.getUTCFullYear(), m = w.getUTCMonth();
+    var t = Date.UTC(y, m + 1, 0, 10, 0, 0); // 17:00 WIB = 10:00 UTC
+    if (Date.now() > t + 2 * 3600e3) { m++; t = Date.UTC(y, m + 1, 0, 10, 0, 0); }
+    var start = Date.UTC(y, m, 1, -7, 0, 0);
+    var mn = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+    return { t: t, start: start, nama: mn[new Date(t + 7 * 3600e3).getUTCMonth()] };
+  }
+  function cdPhase_(ms) {
+    var d = ms / 86400e3;
+    return ms <= 3600e3 ? 5 : (d <= 1 ? 4 : (d <= 3 ? 3 : (d <= 7 ? 2 : 1)));
+  }
+  var CD_PH = { 1: "Musim berjalan", 2: "Mulai memanas", 3: "Sprint akhir", 4: "FINAL DAY", 5: "MENIT TERAKHIR" };
+  function cdDetail_() {
+    var box = document.getElementById("cd-more"), cd = document.getElementById("countdown");
+    if (!box) return;
+    var rows = Object.keys(klasemenMap).map(function (n) { return klasemenMap[n]; }).sort(function (a, b) { return Number(a[0]) - Number(b[0]); });
+    if (!rows.length || Number(rows[0][2]) === 0) { box.innerHTML = "<div class='cd-msg'>Klasemen masih kosong. Saat reset, juara bulan ini diumumkan di layar juara dan masuk Hall of Fame.</div>"; return; }
+    var T = cdTarget_(), ph = Number(cd.getAttribute("data-ph")), nm = function (r) { return stripBadge_(r[1]); };
+    var a = rows[0], b = rows[1], gap = b ? Number(a[9]) - Number(b[9]) : 0;
+    var n = rows.length, totalLaga = LEG_PER_PAIR * n * (n - 1) / 2, played = (formData || []).length, sisa = Math.max(0, totalLaga - played);
+    var msg;
+    if (!b) msg = nm(a) + " sendirian di puncak.";
+    else if (ph >= 4) msg = gap === 0 ? "Poin <b>" + escHtml_(nm(a)) + "</b> dan <b>" + escHtml_(nm(b)) + "</b> sama persis. Selisih gol yang bicara!" : (gap <= 3 ? "Hanya <b>" + gap + " poin</b> memisahkan <b>" + escHtml_(nm(a)) + "</b> dan <b>" + escHtml_(nm(b)) + "</b>. Satu laga bisa membalik segalanya!" : "<b>" + escHtml_(nm(a)) + "</b> unggul " + gap + " poin. Sisa waktu hampir habis, apakah ada yang bisa mengejar?");
+    else if (ph >= 2) msg = gap <= 3 ? "Perebutan ketat: <b>" + escHtml_(nm(a)) + "</b> hanya unggul " + gap + " poin dari <b>" + escHtml_(nm(b)) + "</b>." : "<b>" + escHtml_(nm(a)) + "</b> unggul " + gap + " poin. Masih ada waktu untuk mengejar.";
+    else msg = "Masih banyak waktu. <b>" + escHtml_(nm(a)) + "</b> memimpin sementara, tapi semuanya masih terbuka.";
+    var med = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
+    var pod = rows.slice(0, 3).map(function (r, i) { return "<div><span class='m'>" + med[i] + "</span><b>" + escHtml_(nm(r)) + "</b><span>" + r[9] + " poin</span></div>"; }).join("");
+    var facts = ["\u{1F3C1} Reset: " + T.nama.slice(0, 3) + " 17.00 WIB", "⚽ " + played + " laga dimainkan"];
+    if (sisa > 0) facts.push("⏳ " + sisa + " laga tersisa");
+    box.innerHTML = "<div class='cd-msg'>" + msg + "</div><div class='cd-pod'>" + pod + "</div><div class='cd-facts'>" + facts.map(function (f) { return "<span>" + f + "</span>"; }).join("") + "</div><div style='font-size:11px;color:var(--muted);margin-top:8px'>Juara posisi saat ini akan diumumkan lewat layar juara &amp; masuk Hall of Fame saat reset.</div>";
+  }
+  function cdTick_() {
+    var cd = document.getElementById("countdown");
+    if (!cd) return;
+    var T = cdTarget_(), ms = T.t - Date.now(), running = ms <= 0;
+    cd.style.display = "block";
+    var ph = running ? 5 : cdPhase_(ms);
+    if (cd.getAttribute("data-ph") !== String(ph)) { cd.setAttribute("data-ph", String(ph)); cdDetail_(); }
+    document.getElementById("cd-ph").textContent = running ? "Reset sedang berlangsung" : CD_PH[ph];
+    document.getElementById("cd-sub").textContent = running ? "Klasemen baru segera dimulai..." : "menuju reset " + T.nama;
+    var s = Math.max(0, Math.floor(ms / 1000)), v = { d: Math.floor(s / 86400), h: Math.floor(s % 86400 / 3600), m: Math.floor(s % 3600 / 60), s: s % 60 };
+    Object.keys(v).forEach(function (k) {
+      var el = cd.querySelector("[data-u='" + k + "']"), txt = (k === "d" ? String(v[k]) : (v[k] < 10 ? "0" : "") + v[k]);
+      if (cdLast[k] !== txt) { cdLast[k] = txt; el.firstChild.textContent = txt; el.classList.remove("tick"); void el.offsetWidth; el.classList.add("tick"); }
+    });
+    document.getElementById("cd-fill").style.width = Math.min(100, Math.max(0, (Date.now() - T.start) / (T.t - T.start) * 100)) + "%";
+  }
+  (function () {
+    var cd = document.getElementById("countdown");
+    cd.addEventListener("click", function () { cd.classList.toggle("open"); if (cd.classList.contains("open")) cdDetail_(); });
+    cdTick_(); cdTimer = setInterval(cdTick_, 1000);
+  })();
+
   function buildTicker_() {
     var names = Object.keys(klasemenMap), ms = formData || [], it = [], i;
     if (!names.length) return;
@@ -1191,6 +1289,7 @@
   function applyFormGuide() {
     applyRankMoves();
     buildTicker_();
+    if (typeof cdDetail_ === "function") cdDetail_();
     if (typeof updateNewDots_ === "function") updateNewDots_();
     if (typeof mxPanel_ === "function" && mxData && mxPairSel) mxPanel_();
     var els = document.querySelectorAll(".form-guide");

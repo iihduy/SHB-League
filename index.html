@@ -844,6 +844,9 @@
 .hx-info .hxs div{background:rgba(255,255,255,.05);border-radius:8px;padding:5px 2px}
 .hx-info .hxs b{display:block;font-family:'Oswald',sans-serif;font-size:16px}.hx-info .hxs small{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 @media (prefers-reduced-motion:reduce){.hx-floor::after{animation:none}.hx-in{transition:none;transform:scaleY(1)}.hx-lb{transition:none;opacity:1}}
+
+.gx-wrap{position:relative;margin-top:12px;border-radius:18px;border:1px solid var(--pitch-line);overflow:hidden;background:#030806;touch-action:pan-y}
+.gx-wrap canvas{display:block}
 </style>
 </head>
 <body>
@@ -883,7 +886,7 @@
   </div></div>
 
   <div id="view-klasemen" class="view active">
-    <div class="rw-toggle" id="kl-toggle" style="margin-top:12px"><button class="on" data-kv="tabel">☰ Tabel</button><button data-kv="menara">🔮 Menara 3D</button></div>
+    <div class="rw-toggle" id="kl-toggle" style="margin-top:12px"><button class="on" data-kv="tabel">☰ Tabel</button><button data-kv="menara">🌌 Galaksi</button></div>
     <div id="kl-tabel">
     <table>
       <thead>
@@ -899,7 +902,8 @@
     </div>
     </div>
     <div id="kl-menara" style="display:none">
-      <div class="hx-scene" id="hx-scene"><div class="hx-world" id="hx-world"></div><div class="hx-hint" id="hx-hint">geser untuk memutar &middot; ketuk menara</div></div>
+      <div class="gx-wrap" id="gx-wrap"><canvas id="gx-cv"></canvas><div class="hx-hint" id="hx-hint">ketuk planet &middot; dekat matahari = peringkat atas</div></div>
+      <div class="hc-row" id="gx-chips"></div>
       <div class="hx-info" id="hx-info"></div>
     </div>
     <p class="status" id="status-klasemen"></p>
@@ -1116,100 +1120,140 @@
     loadFormGuide();
   }
 
-  // ---------- Menara 3D (klasemen) ----------
-  var hxRy = 25, hxVel = 0, hxSel = -1, hxTarget = null, hxRun = false, hxDrag = null, hxAuto = true, hxRows = [], hxBuilt = "";
+  // ---------- Galaksi klasemen ----------
+  var gx = { planets: [], t: 0, sel: -1, ts: 1, run: false, w: 0, h: 0, dpr: 1, stars: [], last: 0, shoot: null, sig: "" };
   function hxVisible_() { var m = document.getElementById("kl-menara"); return m && m.style.display !== "none" && document.getElementById("view-klasemen").classList.contains("active"); }
-  function hxData_() {
+  function hash_(n) { var h = 0, i; for (i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % 360; return h; }
+  function gxData_() {
     return Object.keys(klasemenMap).map(function (k) { var r = klasemenMap[k]; return { n: k, rank: Number(r[0]), main: r[2], m: r[3], s: r[4], k: r[5], gm: r[6], gk: r[7], sg: r[8], p: Number(r[9]) || 0 }; })
       .sort(function (a, b) { return a.rank - b.rank; });
   }
-  function drawHx_() {
-    var world = document.getElementById("hx-world"); if (!world) return;
-    var rows = hxData_(), N = rows.length;
-    if (!N) { world.innerHTML = ""; return; }
-    var sig = JSON.stringify(rows.map(function (r) { return [r.n, r.p, r.rank]; }));
-    hxRows = rows;
-    var maxP = Math.max.apply(null, rows.map(function (r) { return r.p; }).concat([1])), R = Math.max(138, N * 50 / (2 * Math.PI)), W = N > 10 ? 26 : 30, MH = 190;
-    if (sig !== hxBuilt) {
-      hxBuilt = sig;
-      var html = "<div class='hx-floor'></div>";
-      rows.forEach(function (r, i) {
-        var a = i / N * 360, H = Math.max(26, r.p / maxP * MH), c = r.rank === 1 ? "232,179,61" : (r.rank === 2 ? "203,213,225" : (r.rank === 3 ? "224,150,100" : (N >= 6 && r.rank > N - 2 ? "248,113,113" : "45,212,191")));
-        html += "<div class='hx-tw' data-i='" + i + "' style='--a:" + a.toFixed(2) + ";--R:" + R.toFixed(0) + "px;--w:" + W + "px;--h:" + H.toFixed(0) + "px;--c:" + c + ";--d:" + (i * 0.07).toFixed(2) + "s'>" +
-          "<div class='hx-in'><div class='hx-f fr'></div><div class='hx-f bk'></div><div class='hx-f lf'></div><div class='hx-f rt'></div><div class='hx-f tp'></div></div>" +
-          "<div class='hx-lb'><b>" + (r.rank === 1 ? "\u{1F451} " : "") + escHtml_(r.n.length > 8 ? r.n.slice(0, 7) + "…" : r.n) + "</b><i>" + r.p + "</i></div></div>";
-      });
-      world.innerHTML = html;
-      world.classList.remove("hx-on"); void world.offsetWidth;
-      requestAnimationFrame(function () { world.classList.add("hx-on"); });
-    }
-    Array.prototype.forEach.call(world.querySelectorAll(".hx-tw"), function (t) {
-      var i = Number(t.getAttribute("data-i"));
-      t.classList.toggle("sel", i === hxSel); t.classList.toggle("dim", hxSel >= 0 && i !== hxSel);
-    });
-    world.style.setProperty("--ry", hxRy.toFixed(2));
-    drawHxInfo_();
+  function gxSize_() {
+    var cv = document.getElementById("gx-cv"), wrap = document.getElementById("gx-wrap"); if (!cv || !wrap) return false;
+    var w = wrap.clientWidth || 360, h = Math.round(Math.min(440, Math.max(340, w * 1.0))), dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (w === gx.w && h === gx.h && dpr === gx.dpr) return false;
+    gx.w = w; gx.h = h; gx.dpr = dpr;
+    wrap.style.height = h + "px"; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); cv.style.width = w + "px"; cv.style.height = h + "px";
+    gx.stars = []; var i; for (i = 0; i < 90; i++) gx.stars.push({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.3 + 0.2, ph: Math.random() * 6.28, sp: 0.5 + Math.random() * 1.5 });
+    return true;
   }
-  function drawHxInfo_() {
-    var el = document.getElementById("hx-info"), rows = hxRows; if (!el || !rows.length) return;
-    if (hxSel >= 0 && rows[hxSel]) {
-      var r = rows[hxSel], up = rows[hxSel - 1], dn = rows[hxSel + 1];
+  function gxBuild_() {
+    var rows = gxData_(), N = rows.length; gxSize_();
+    var sig = JSON.stringify(rows.map(function (r) { return [r.n, r.p, r.rank]; }));
+    if (sig === gx.sig && gx.w === gx.planets.w) { gxChips_(); gxInfo_(); return; }
+    gx.sig = sig;
+    if (!N) { gx.planets = []; return; }
+    var maxP = Math.max.apply(null, rows.map(function (r) { return r.p; }).concat([1])), minP = Math.min.apply(null, rows.map(function (r) { return r.p; }));
+    var Rmax = gx.w / 2 - 22, R0 = 62, prev = 0;
+    gx.planets = rows.map(function (r, i) {
+      var mixr = N > 1 ? 0.55 * (i / (N - 1)) + 0.45 * ((maxP - r.p) / ((maxP - minP) || 1)) : 0;
+      var rad = R0 + (Rmax - R0) * Math.min(1, mixr);
+      if (i && rad < prev + 15) rad = prev + 15; prev = rad;
+      return { d: r, i: i, r: rad, a0: i * 2.399, size: 8 + r.p / maxP * 8, hue: hash_(r.n), x: 0, y: 0, z: 1 };
+    });
+    var over = prev - Rmax; if (over > 0) { var f = (Rmax - R0) / (prev - R0); gx.planets.forEach(function (pl) { pl.r = R0 + (pl.r - R0) * f; }); }
+    gx.planets.w = gx.w;
+    gxChips_(); gxInfo_();
+  }
+  function gxChips_() {
+    var el = document.getElementById("gx-chips"); if (!el) return;
+    el.innerHTML = gx.planets.map(function (pl, i) { return "<button class='hc" + (gx.sel === i ? " on" : "") + "' data-g='" + i + "'>" + pl.d.rank + " " + escHtml_(pl.d.n) + "</button>"; }).join("");
+  }
+  function gxInfo_() {
+    var el = document.getElementById("hx-info"), P = gx.planets; if (!el || !P.length) return;
+    if (gx.sel >= 0 && P[gx.sel]) {
+      var r = P[gx.sel].d, up = P[gx.sel - 1] && P[gx.sel - 1].d, dn = P[gx.sel + 1] && P[gx.sel + 1].d;
       var gap = (up ? "▲ " + (up.p - r.p) + " poin ke " + escHtml_(up.n) : "\u{1F451} Puncak") + (dn ? " &nbsp;&middot;&nbsp; ▼ " + (r.p - dn.p) + " poin dari " + escHtml_(dn.n) : "");
+      var fm = matchesOf_(r.n).slice(-5).map(function (m) { return dotHtml_(resultOf_(m, r.n)); }).join("");
       el.innerHTML = "<div class='hxn'>#" + r.rank + " " + escHtml_(r.n) + "</div><div style='font-size:12px;color:var(--muted);margin-top:2px'>" + gap + "</div>" +
+        (fm ? "<div class='form-guide' style='margin-top:8px'>" + fm + "</div>" : "") +
         "<div class='hxs'><div><b>" + r.p + "</b><small>Poin</small></div><div><b>" + r.m + "-" + r.s + "-" + r.k + "</b><small>M-S-K</small></div><div><b>" + r.gm + "-" + r.gk + "</b><small>Gol</small></div><div><b>" + (r.sg > 0 ? "+" + r.sg : r.sg) + "</b><small>SG</small></div></div>" +
         "<button class='fc-btn' id='hx-prof'>Buka profil</button>";
       document.getElementById("hx-prof").onclick = function () { openProfile(r.n); };
     } else {
-      var t = rows[0], s2 = rows[1];
-      el.innerHTML = "<div class='hxn'>\u{1F451} " + escHtml_(t.n) + " memimpin</div><div style='font-size:12px;color:var(--muted);margin-top:4px'>" + t.p + " poin" + (s2 ? " &middot; unggul " + (t.p - s2.p) + " poin dari " + escHtml_(s2.n) : "") + ". Tinggi menara = jumlah poin. Menara merah = zona bawah.</div>";
+      var t = P[0].d, s2 = P[1] && P[1].d;
+      el.innerHTML = "<div class='hxn'>\u{1F451} " + escHtml_(t.n) + " memimpin</div><div style='font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5'>" + t.p + " poin" + (s2 ? " &middot; unggul " + (t.p - s2.p) + " poin dari " + escHtml_(s2.n) : "") + ". Makin dekat ke matahari, makin tinggi peringkat dan poinnya. Ukuran planet = poin. Aura merah = zona bawah. Ketuk planet atau nama di atas.</div>";
     }
   }
-  function hxLoop_(ts) {
-    if (!hxVisible_()) { hxRun = false; return; }
-    var world = document.getElementById("hx-world");
-    if (!hxDrag) {
-      if (hxTarget !== null) {
-        var d = ((hxTarget - hxRy) % 360 + 540) % 360 - 180; hxRy += d * 0.12; if (Math.abs(d) < 0.3) { hxRy = hxTarget; hxTarget = null; }
-      } else if (Math.abs(hxVel) > 0.02) { hxRy += hxVel; hxVel *= 0.94; }
-      else if (hxAuto && hxSel < 0) hxRy += 0.12;
-    }
-    if (world) world.style.setProperty("--ry", hxRy.toFixed(2));
-    requestAnimationFrame(hxLoop_);
-  }
-  function hxStart_() { if (!hxRun) { hxRun = true; requestAnimationFrame(hxLoop_); } }
-  function hxSelect_(i) {
-    hxSel = i; hxAuto = false;
-    if (i >= 0) hxTarget = -(i / hxRows.length * 360);
-    drawHx_();
-  }
-  (function () {
-    var sc = document.getElementById("hx-scene"), moved = 0;
-    sc.addEventListener("pointerdown", function (e) { hxDrag = { x: e.clientX, lx: e.clientX, id: e.pointerId }; moved = 0; hxVel = 0; hxTarget = null; });
-    sc.addEventListener("pointermove", function (e) {
-      if (!hxDrag) return;
-      var dx = e.clientX - hxDrag.lx; hxDrag.lx = e.clientX; moved += Math.abs(dx);
-      if (moved > 6) { try { sc.setPointerCapture(hxDrag.id); } catch (x) {} hxAuto = false; }
-      hxRy += dx * 0.45; hxVel = dx * 0.45;
+  function gxDraw_(dt) {
+    var cv = document.getElementById("gx-cv"); if (!cv) return;
+    var c = cv.getContext("2d"), w = gx.w, h = gx.h, k = 0.8, cx = w / 2, cy = h * 0.5, N = gx.planets.length, selected = gx.sel;
+    c.setTransform(gx.dpr, 0, 0, gx.dpr, 0, 0); c.clearRect(0, 0, w, h);
+    var bg = c.createRadialGradient(cx, cy, 10, cx, cy, w * 0.75); bg.addColorStop(0, "#14301f"); bg.addColorStop(0.5, "#08150f"); bg.addColorStop(1, "#030806");
+    c.fillStyle = bg; c.fillRect(0, 0, w, h);
+    var T = gx.t, i;
+    gx.stars.forEach(function (st) { c.globalAlpha = 0.25 + 0.55 * (0.5 + 0.5 * Math.sin(T * st.sp + st.ph)); c.fillStyle = "#cfe8ff"; c.beginPath(); c.arc(st.x, st.y, st.r, 0, 6.283); c.fill(); });
+    c.globalAlpha = 1;
+    // bintang jatuh
+    if (gx.shoot) { var sh = gx.shoot; sh.l += dt; var q = sh.l / 0.9; if (q >= 1) gx.shoot = null; else { c.strokeStyle = "rgba(255,255,255," + (1 - q) + ")"; c.lineWidth = 1.4; c.beginPath(); c.moveTo(sh.x + q * 140, sh.y + q * 70); c.lineTo(sh.x + q * 140 - 34, sh.y + q * 70 - 17); c.stroke(); } }
+    else if (Math.random() < dt * 0.15) gx.shoot = { x: Math.random() * w * 0.6, y: Math.random() * h * 0.4, l: 0 };
+    // orbit
+    gx.planets.forEach(function (pl) {
+      var on = selected === pl.i; c.strokeStyle = on ? "rgba(255,255,255,.55)" : "rgba(143,175,155," + (selected >= 0 ? 0.07 : 0.16) + ")"; c.lineWidth = on ? 1.6 : 1;
+      c.beginPath(); c.ellipse(cx, cy, pl.r, pl.r * k, 0, 0, 6.283); c.stroke();
     });
-    function up(e) {
-      if (!hxDrag) return;
-      hxDrag = null;
-      if (moved <= 6) {
-        var t = e.target.closest ? e.target.closest(".hx-tw") : null;
-        var tw = t ? Number(t.getAttribute("data-i")) : -1;
-        if (tw >= 0) hxSelect_(tw === hxSel ? -1 : tw); else if (hxSel >= 0) hxSelect_(-1);
+    // posisi
+    gx.planets.forEach(function (pl) {
+      var om = 0.32 / Math.pow(pl.r / 100, 1.45), ang = pl.a0 + om * T;
+      pl.ang = ang; pl.x = cx + Math.cos(ang) * pl.r; pl.y = cy + Math.sin(ang) * pl.r * k; pl.z = 0.82 + 0.3 * (Math.sin(ang) + 1) / 2; pl.back = Math.sin(ang) < 0;
+    });
+    function planet(pl) {
+      var r = pl.size * pl.z, dim = selected >= 0 && selected !== pl.i ? 0.35 : 1, d = pl.d;
+      c.globalAlpha = dim;
+      var aura = d.rank === 1 ? "232,179,61" : (N >= 6 && d.rank > N - 2 ? "248,113,113" : null);
+      if (aura) { var g = c.createRadialGradient(pl.x, pl.y, r * 0.5, pl.x, pl.y, r * 2.6); g.addColorStop(0, "rgba(" + aura + ",.55)"); g.addColorStop(1, "rgba(" + aura + ",0)"); c.fillStyle = g; c.beginPath(); c.arc(pl.x, pl.y, r * 2.6, 0, 6.283); c.fill(); }
+      var sp = c.createRadialGradient(pl.x - r * 0.35, pl.y - r * 0.35, r * 0.1, pl.x, pl.y, r);
+      sp.addColorStop(0, "hsl(" + pl.hue + ",85%,78%)"); sp.addColorStop(0.6, "hsl(" + pl.hue + ",65%,48%)"); sp.addColorStop(1, "hsl(" + pl.hue + ",60%,22%)");
+      c.fillStyle = sp; c.beginPath(); c.arc(pl.x, pl.y, r, 0, 6.283); c.fill();
+      if (selected === pl.i) {
+        var pu = 1 + 0.15 * Math.sin(T * 5); c.strokeStyle = "#fff"; c.lineWidth = 2; c.beginPath(); c.arc(pl.x, pl.y, (r + 6) * pu, 0, 6.283); c.stroke();
+        var fm = matchesOf_(d.n).slice(-5);
+        fm.forEach(function (m, j) { var a2 = T * 2.2 + j * 6.283 / 5, rr = r + 15, res = resultOf_(m, d.n); c.fillStyle = res === "w" ? "#4ADE80" : (res === "l" ? "#F87171" : "#FBBF24"); c.beginPath(); c.arc(pl.x + Math.cos(a2) * rr, pl.y + Math.sin(a2) * rr * 0.7, 3.2, 0, 6.283); c.fill(); });
       }
+      c.fillStyle = "#F3F1E7"; c.font = (selected === pl.i ? "700 " : "500 ") + "10.5px Inter,sans-serif"; c.textAlign = "center"; c.lineWidth = 3; c.strokeStyle = "rgba(3,8,6,.9)";
+      var lab = d.n.length > 9 ? d.n.slice(0, 8) + "…" : d.n; c.strokeText(lab, pl.x, pl.y + r + 12); c.fillText(lab, pl.x, pl.y + r + 12);
+      if (d.rank === 1) { c.font = "14px sans-serif"; c.fillText("\u{1F451}", pl.x, pl.y - r - 5); }
+      c.globalAlpha = 1;
     }
-    sc.addEventListener("pointerup", up); sc.addEventListener("pointercancel", function () { hxDrag = null; });
+    gx.planets.filter(function (pl) { return pl.back; }).forEach(planet);
+    // matahari
+    var pulse = 1 + 0.06 * Math.sin(T * 2), sr = 24 * pulse, sg = c.createRadialGradient(cx, cy, 2, cx, cy, sr * 3.2);
+    sg.addColorStop(0, "rgba(255,236,170,1)"); sg.addColorStop(0.25, "rgba(232,179,61,.9)"); sg.addColorStop(0.6, "rgba(232,179,61,.22)"); sg.addColorStop(1, "rgba(232,179,61,0)");
+    c.fillStyle = sg; c.beginPath(); c.arc(cx, cy, sr * 3.2, 0, 6.283); c.fill();
+    c.fillStyle = "#3a2a05"; c.font = "700 11px Oswald,sans-serif"; c.textAlign = "center"; c.fillText("SHB", cx, cy + 4);
+    gx.planets.filter(function (pl) { return !pl.back; }).forEach(planet);
+  }
+  function gxLoop_(ts) {
+    if (!hxVisible_()) { gx.run = false; gx.last = 0; return; }
+    var dt = gx.last ? Math.min(0.05, (ts - gx.last) / 1000) : 0.016; gx.last = ts;
+    var target = gx.sel >= 0 ? 0.25 : 1; gx.ts += (target - gx.ts) * Math.min(1, dt * 5);
+    gx.t += dt * gx.ts;
+    if (gxSize_()) { gx.sig = ""; gxBuild_(); }
+    gxDraw_(dt);
+    requestAnimationFrame(gxLoop_);
+  }
+  function hxStart_() { if (!gx.run) { gx.run = true; gx.last = 0; requestAnimationFrame(gxLoop_); } }
+  function drawHx_() { gxBuild_(); if (!gx.run && hxVisible_()) hxStart_(); }
+  function gxSelect_(i) { gx.sel = i; gxChips_(); gxInfo_(); }
+  (function () {
+    var cv = document.getElementById("gx-cv"), reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    cv.addEventListener("click", function (e) {
+      var r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, best = -1, bd = 30;
+      gx.planets.forEach(function (pl) { var d = Math.hypot(pl.x - x, pl.y - y); if (d < bd) { bd = d; best = pl.i; } });
+      gxSelect_(best >= 0 && best !== gx.sel ? best : -1);
+    });
     var kv = document.getElementById("view-klasemen");
     kv.addEventListener("click", function (e) {
+      var g = e.target.closest ? e.target.closest("#gx-chips .hc") : null;
+      if (g) { var i = Number(g.getAttribute("data-g")); gxSelect_(i === gx.sel ? -1 : i); return; }
       var b = e.target.closest ? e.target.closest("#kl-toggle button") : null; if (!b) return;
       var m = b.getAttribute("data-kv");
       Array.prototype.forEach.call(kv.querySelectorAll("#kl-toggle button"), function (x) { x.classList.toggle("on", x === b); });
       document.getElementById("kl-tabel").style.display = m === "tabel" ? "" : "none";
       document.getElementById("kl-menara").style.display = m === "menara" ? "" : "none";
-      if (m === "menara") { hxBuilt = ""; hxSel = -1; hxAuto = true; drawHx_(); hxStart_(); }
+      if (m === "menara") { gx.sel = -1; gx.sig = ""; gx.w = 0; gxBuild_(); hxStart_(); }
     });
+    window.addEventListener("resize", function () { if (hxVisible_()) { gx.sig = ""; gxBuild_(); } });
   })();
 
   function renderMatrix(table) {
@@ -3398,7 +3442,7 @@
   }
   (function () {
     var x0 = null, y0 = null;
-    var BLOCK = "input,select,textarea,.hx-scene,.matrix-scroll,.ss-chips,.lt-chips,.ss-subbar,.mx-stage,.ss-svg,.rc-ctl,.rc,.tabs,.modal-overlay,.ss-hist,.mcw,.hc-row,.bs-ov,.ch-overlay,.hh";
+    var BLOCK = "input,select,textarea,.gx-wrap,.matrix-scroll,.ss-chips,.lt-chips,.ss-subbar,.mx-stage,.ss-svg,.rc-ctl,.rc,.tabs,.modal-overlay,.ss-hist,.mcw,.hc-row,.bs-ov,.ch-overlay,.hh";
     document.addEventListener("touchstart", function (e) {
       if (e.touches.length !== 1 || (e.target.closest && e.target.closest(BLOCK))) { x0 = null; return; }
       x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;

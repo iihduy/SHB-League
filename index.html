@@ -812,6 +812,38 @@
 .dm-duel b{display:block;font-family:'Oswald',sans-serif;font-size:28px;color:var(--gold);line-height:1}
 .dm-duel small{font-size:10px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){#dm-list.anim .py-n,.py-crown{animation:none}}
+
+/* ---- menara 3D ---- */
+.hx-scene{position:relative;height:400px;margin-top:12px;border-radius:18px;border:1px solid var(--pitch-line);overflow:hidden;perspective:950px;touch-action:pan-y;cursor:grab;user-select:none;-webkit-user-select:none;
+  background:radial-gradient(ellipse at 50% 85%,rgba(45,212,191,.16),transparent 60%),radial-gradient(ellipse at 50% 0%,rgba(232,179,61,.10),transparent 50%),#050d0a}
+.hx-scene::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 4px);pointer-events:none;z-index:3}
+.hx-scene:active{cursor:grabbing}
+.hx-world{position:absolute;left:50%;top:66%;width:0;height:0;transform-style:preserve-3d;transform:rotateX(-27deg) rotateY(calc(var(--ry,0) * 1deg))}
+.hx-floor{position:absolute;left:-190px;top:-190px;width:380px;height:380px;border-radius:50%;transform:rotateX(90deg);
+  background:radial-gradient(circle,rgba(45,212,191,.22) 0,rgba(45,212,191,.05) 55%,transparent 70%),repeating-radial-gradient(circle,rgba(45,212,191,.35) 0 1px,transparent 1px 38px);box-shadow:0 0 60px rgba(45,212,191,.25) inset}
+.hx-floor::after{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(45,212,191,.35),transparent 30%);animation:hxScan 5s linear infinite}
+@keyframes hxScan{to{transform:rotate(360deg)}}
+.hx-tw{position:absolute;left:0;top:0;width:0;height:0;transform-style:preserve-3d;transform:rotateY(calc(var(--a) * 1deg)) translateZ(var(--R))}
+.hx-in{position:absolute;left:calc(var(--w) / -2);top:calc(var(--h) * -1);width:var(--w);height:var(--h);transform-style:preserve-3d;transform-origin:50% 100%;transform:scaleY(0);transition:transform 1.1s cubic-bezier(.2,.9,.2,1) var(--d)}
+.hx-on .hx-in{transform:scaleY(1)}
+.hx-f{position:absolute;inset:0;background:linear-gradient(180deg,rgba(var(--c),.62),rgba(var(--c),.10));border:1px solid rgba(var(--c),.75);box-shadow:inset 0 0 12px rgba(var(--c),.35)}
+.hx-f.fr{transform:translateZ(calc(var(--w) / 2))}.hx-f.bk{transform:rotateY(180deg) translateZ(calc(var(--w) / 2))}
+.hx-f.lf{transform:rotateY(-90deg) translateZ(calc(var(--w) / 2))}.hx-f.rt{transform:rotateY(90deg) translateZ(calc(var(--w) / 2))}
+.hx-f.tp{inset:auto;left:0;top:calc(var(--w) / -2);width:var(--w);height:var(--w);transform:rotateX(90deg);background:rgba(var(--c),.9);box-shadow:0 0 22px rgba(var(--c),.9)}
+.hx-tw.sel .hx-f{border-color:#fff;box-shadow:inset 0 0 18px rgba(var(--c),.8),0 0 18px rgba(var(--c),.8)}
+.hx-tw.dim .hx-f{opacity:.35}
+.hx-lb{position:absolute;left:0;top:calc(var(--h) * -1 - 34px);transform:translateX(-50%) rotateY(calc((var(--a) + var(--ry,0)) * -1deg)) rotateX(27deg);text-align:center;white-space:nowrap;opacity:0;transition:opacity .5s calc(var(--d) + .8s);pointer-events:auto;cursor:pointer;font-size:10px;line-height:1.25}
+.hx-on .hx-lb{opacity:1}
+.hx-lb b{display:block;font-size:11px;color:#F3F1E7;text-shadow:0 0 6px #000,0 0 3px #000}
+.hx-lb i{font-style:normal;font-family:'Oswald',sans-serif;font-size:12px;color:rgb(var(--c));text-shadow:0 0 8px rgba(var(--c),.8)}
+.hx-tw.dim .hx-lb{opacity:.4}
+.hx-hint{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.4);z-index:4;pointer-events:none}
+.hx-info{margin-top:10px;background:var(--pitch-panel);border:1px solid var(--pitch-line);border-radius:14px;padding:12px;min-height:70px}
+.hx-info .hxn{font-family:'Oswald',sans-serif;font-size:20px;color:var(--gold)}
+.hx-info .hxs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px;text-align:center}
+.hx-info .hxs div{background:rgba(255,255,255,.05);border-radius:8px;padding:5px 2px}
+.hx-info .hxs b{display:block;font-family:'Oswald',sans-serif;font-size:16px}.hx-info .hxs small{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+@media (prefers-reduced-motion:reduce){.hx-floor::after{animation:none}.hx-in{transition:none;transform:scaleY(1)}.hx-lb{transition:none;opacity:1}}
 </style>
 </head>
 <body>
@@ -851,6 +883,8 @@
   </div></div>
 
   <div id="view-klasemen" class="view active">
+    <div class="rw-toggle" id="kl-toggle" style="margin-top:12px"><button class="on" data-kv="tabel">☰ Tabel</button><button data-kv="menara">🔮 Menara 3D</button></div>
+    <div id="kl-tabel">
     <table>
       <thead>
         <tr><th>#</th><th>Nama</th><th>Main</th><th>M</th><th>S</th><th>K</th><th>GM</th><th>GK</th><th>SG</th><th>Poin</th></tr>
@@ -862,6 +896,11 @@
     <div class="legend">
       <div><span class="dot gold"></span>Zona juara</div>
       <div><span class="dot red"></span>Zona bawah</div>
+    </div>
+    </div>
+    <div id="kl-menara" style="display:none">
+      <div class="hx-scene" id="hx-scene"><div class="hx-world" id="hx-world"></div><div class="hx-hint" id="hx-hint">geser untuk memutar &middot; ketuk menara</div></div>
+      <div class="hx-info" id="hx-info"></div>
     </div>
     <p class="status" id="status-klasemen"></p>
   </div>
@@ -1073,8 +1112,105 @@
     }).join("");
     data.forEach(function (row) { klasemenMap[stripBadge_(row[1])] = row; });
     document.getElementById("rows").innerHTML = html;
+    if (typeof hxVisible_ === "function" && hxVisible_()) drawHx_();
     loadFormGuide();
   }
+
+  // ---------- Menara 3D (klasemen) ----------
+  var hxRy = 25, hxVel = 0, hxSel = -1, hxTarget = null, hxRun = false, hxDrag = null, hxAuto = true, hxRows = [], hxBuilt = "";
+  function hxVisible_() { var m = document.getElementById("kl-menara"); return m && m.style.display !== "none" && document.getElementById("view-klasemen").classList.contains("active"); }
+  function hxData_() {
+    return Object.keys(klasemenMap).map(function (k) { var r = klasemenMap[k]; return { n: k, rank: Number(r[0]), main: r[2], m: r[3], s: r[4], k: r[5], gm: r[6], gk: r[7], sg: r[8], p: Number(r[9]) || 0 }; })
+      .sort(function (a, b) { return a.rank - b.rank; });
+  }
+  function drawHx_() {
+    var world = document.getElementById("hx-world"); if (!world) return;
+    var rows = hxData_(), N = rows.length;
+    if (!N) { world.innerHTML = ""; return; }
+    var sig = JSON.stringify(rows.map(function (r) { return [r.n, r.p, r.rank]; }));
+    hxRows = rows;
+    var maxP = Math.max.apply(null, rows.map(function (r) { return r.p; }).concat([1])), R = Math.max(138, N * 50 / (2 * Math.PI)), W = N > 10 ? 26 : 30, MH = 190;
+    if (sig !== hxBuilt) {
+      hxBuilt = sig;
+      var html = "<div class='hx-floor'></div>";
+      rows.forEach(function (r, i) {
+        var a = i / N * 360, H = Math.max(26, r.p / maxP * MH), c = r.rank === 1 ? "232,179,61" : (r.rank === 2 ? "203,213,225" : (r.rank === 3 ? "224,150,100" : (N >= 6 && r.rank > N - 2 ? "248,113,113" : "45,212,191")));
+        html += "<div class='hx-tw' data-i='" + i + "' style='--a:" + a.toFixed(2) + ";--R:" + R.toFixed(0) + "px;--w:" + W + "px;--h:" + H.toFixed(0) + "px;--c:" + c + ";--d:" + (i * 0.07).toFixed(2) + "s'>" +
+          "<div class='hx-in'><div class='hx-f fr'></div><div class='hx-f bk'></div><div class='hx-f lf'></div><div class='hx-f rt'></div><div class='hx-f tp'></div></div>" +
+          "<div class='hx-lb'><b>" + (r.rank === 1 ? "\u{1F451} " : "") + escHtml_(r.n.length > 8 ? r.n.slice(0, 7) + "…" : r.n) + "</b><i>" + r.p + "</i></div></div>";
+      });
+      world.innerHTML = html;
+      world.classList.remove("hx-on"); void world.offsetWidth;
+      requestAnimationFrame(function () { world.classList.add("hx-on"); });
+    }
+    Array.prototype.forEach.call(world.querySelectorAll(".hx-tw"), function (t) {
+      var i = Number(t.getAttribute("data-i"));
+      t.classList.toggle("sel", i === hxSel); t.classList.toggle("dim", hxSel >= 0 && i !== hxSel);
+    });
+    world.style.setProperty("--ry", hxRy.toFixed(2));
+    drawHxInfo_();
+  }
+  function drawHxInfo_() {
+    var el = document.getElementById("hx-info"), rows = hxRows; if (!el || !rows.length) return;
+    if (hxSel >= 0 && rows[hxSel]) {
+      var r = rows[hxSel], up = rows[hxSel - 1], dn = rows[hxSel + 1];
+      var gap = (up ? "▲ " + (up.p - r.p) + " poin ke " + escHtml_(up.n) : "\u{1F451} Puncak") + (dn ? " &nbsp;&middot;&nbsp; ▼ " + (r.p - dn.p) + " poin dari " + escHtml_(dn.n) : "");
+      el.innerHTML = "<div class='hxn'>#" + r.rank + " " + escHtml_(r.n) + "</div><div style='font-size:12px;color:var(--muted);margin-top:2px'>" + gap + "</div>" +
+        "<div class='hxs'><div><b>" + r.p + "</b><small>Poin</small></div><div><b>" + r.m + "-" + r.s + "-" + r.k + "</b><small>M-S-K</small></div><div><b>" + r.gm + "-" + r.gk + "</b><small>Gol</small></div><div><b>" + (r.sg > 0 ? "+" + r.sg : r.sg) + "</b><small>SG</small></div></div>" +
+        "<button class='fc-btn' id='hx-prof'>Buka profil</button>";
+      document.getElementById("hx-prof").onclick = function () { openProfile(r.n); };
+    } else {
+      var t = rows[0], s2 = rows[1];
+      el.innerHTML = "<div class='hxn'>\u{1F451} " + escHtml_(t.n) + " memimpin</div><div style='font-size:12px;color:var(--muted);margin-top:4px'>" + t.p + " poin" + (s2 ? " &middot; unggul " + (t.p - s2.p) + " poin dari " + escHtml_(s2.n) : "") + ". Tinggi menara = jumlah poin. Menara merah = zona bawah.</div>";
+    }
+  }
+  function hxLoop_(ts) {
+    if (!hxVisible_()) { hxRun = false; return; }
+    var world = document.getElementById("hx-world");
+    if (!hxDrag) {
+      if (hxTarget !== null) {
+        var d = ((hxTarget - hxRy) % 360 + 540) % 360 - 180; hxRy += d * 0.12; if (Math.abs(d) < 0.3) { hxRy = hxTarget; hxTarget = null; }
+      } else if (Math.abs(hxVel) > 0.02) { hxRy += hxVel; hxVel *= 0.94; }
+      else if (hxAuto && hxSel < 0) hxRy += 0.12;
+    }
+    if (world) world.style.setProperty("--ry", hxRy.toFixed(2));
+    requestAnimationFrame(hxLoop_);
+  }
+  function hxStart_() { if (!hxRun) { hxRun = true; requestAnimationFrame(hxLoop_); } }
+  function hxSelect_(i) {
+    hxSel = i; hxAuto = false;
+    if (i >= 0) hxTarget = -(i / hxRows.length * 360);
+    drawHx_();
+  }
+  (function () {
+    var sc = document.getElementById("hx-scene"), moved = 0;
+    sc.addEventListener("pointerdown", function (e) { hxDrag = { x: e.clientX, lx: e.clientX, id: e.pointerId }; moved = 0; hxVel = 0; hxTarget = null; });
+    sc.addEventListener("pointermove", function (e) {
+      if (!hxDrag) return;
+      var dx = e.clientX - hxDrag.lx; hxDrag.lx = e.clientX; moved += Math.abs(dx);
+      if (moved > 6) { try { sc.setPointerCapture(hxDrag.id); } catch (x) {} hxAuto = false; }
+      hxRy += dx * 0.45; hxVel = dx * 0.45;
+    });
+    function up(e) {
+      if (!hxDrag) return;
+      hxDrag = null;
+      if (moved <= 6) {
+        var t = e.target.closest ? e.target.closest(".hx-tw") : null;
+        var tw = t ? Number(t.getAttribute("data-i")) : -1;
+        if (tw >= 0) hxSelect_(tw === hxSel ? -1 : tw); else if (hxSel >= 0) hxSelect_(-1);
+      }
+    }
+    sc.addEventListener("pointerup", up); sc.addEventListener("pointercancel", function () { hxDrag = null; });
+    var kv = document.getElementById("view-klasemen");
+    kv.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest("#kl-toggle button") : null; if (!b) return;
+      var m = b.getAttribute("data-kv");
+      Array.prototype.forEach.call(kv.querySelectorAll("#kl-toggle button"), function (x) { x.classList.toggle("on", x === b); });
+      document.getElementById("kl-tabel").style.display = m === "tabel" ? "" : "none";
+      document.getElementById("kl-menara").style.display = m === "menara" ? "" : "none";
+      if (m === "menara") { hxBuilt = ""; hxSel = -1; hxAuto = true; drawHx_(); hxStart_(); }
+    });
+  })();
 
   function renderMatrix(table) {
     // ambil semua label kolom lawan, lalu saring yang kosong (slot buffer belum terpakai)
@@ -3262,7 +3398,7 @@
   }
   (function () {
     var x0 = null, y0 = null;
-    var BLOCK = "input,select,textarea,.matrix-scroll,.ss-chips,.lt-chips,.ss-subbar,.mx-stage,.ss-svg,.rc-ctl,.rc,.tabs,.modal-overlay,.ss-hist,.mcw,.hc-row,.bs-ov,.ch-overlay,.hh";
+    var BLOCK = "input,select,textarea,.hx-scene,.matrix-scroll,.ss-chips,.lt-chips,.ss-subbar,.mx-stage,.ss-svg,.rc-ctl,.rc,.tabs,.modal-overlay,.ss-hist,.mcw,.hc-row,.bs-ov,.ch-overlay,.hh";
     document.addEventListener("touchstart", function (e) {
       if (e.touches.length !== 1 || (e.target.closest && e.target.closest(BLOCK))) { x0 = null; return; }
       x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
@@ -3291,6 +3427,7 @@
         loaders[view]();
       }
       placeInd_();
+      if (view === "klasemen" && typeof hxVisible_ === "function" && hxVisible_()) hxStart_();
       if (formData && DOT_VIEWS.indexOf(view) >= 0) { lsSet_("shb_seen_" + view, formData.length); setDot_(view, false); }
     });
   });

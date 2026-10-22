@@ -2808,7 +2808,7 @@
       return r[6] === "Selesai" && r[2] && r[3];
     });
     completed.reverse(); // terbaru di atas
-    completed.forEach(function (r, i) { r._i = i; });
+    completed.forEach(function (r, i) { r._i = i; r._n = completed.length - i; }); // _n = urutan laga sebenarnya (bukan nomor baris sheet)
     allMatches = completed;
     var sig = JSON.stringify(completed);
     var changed = sig !== hasilSig; hasilSig = sig;
@@ -2946,7 +2946,7 @@
       var dl = anim && idx < 14 ? " style='animation-delay:" + (idx * 40) + "ms'" : "";
       return "<div class='mcw" + (anim ? " anim" : "") + "'" + dl + "><div class='mc-act'><div class='act-l'>\u{1F4CB} Detail \u25B8</div><div class='act-r'><button class='mc-flt' data-n='" + escHtml_(home) + "'>\u{1F50D} " + escHtml_(home) + "</button><button class='mc-flt' data-n='" + escHtml_(away) + "'>\u{1F50D} " + escHtml_(away) + "</button></div></div>" +
         "<div class='mc mc-open k-" + tg.k + "' data-i='" + row._i + "'>" +
-        "<div class='mc-top'><span>#" + escHtml_(row[0] == null ? "" : row[0]) + "</span><span class='mc-tag'>" + tg.l + "</span></div>" +
+        "<div class='mc-top'><span>Laga ke-" + row._n + "</span><span class='mc-tag'>" + tg.l + "</span></div>" +
         "<div class='mc-main'>" + mcSide_(home, sh, sh > sa) + "<div class='mc-sc'>" + sh + "<i>-</i>" + sa + "</div>" + mcSide_(away, sa, sa > sh) + "</div></div></div>";
     }).join("");
     if (!matches.length) html = '<p class="match-empty">Tidak ada pertandingan yang cocok.</p>';
@@ -3117,7 +3117,7 @@
     if (sh === 0 || sa === 0) facts.push("Clean sheet");
     var el = document.getElementById("mt-sheet");
     if (!el) { el = document.createElement("div"); el.id = "mt-sheet"; el.className = "bs-ov"; document.body.appendChild(el); el.addEventListener("click", function (e) { if (e.target === el || (e.target.closest && e.target.closest(".bs-x"))) el.style.display = "none"; }); }
-    el.innerHTML = "<div class='bs-card ms-card'><button class='bs-x' aria-label='Tutup'>&times;</button><div class='ms-tag'>" + tg.l + " &middot; #" + escHtml_(row[0]) + "</div>" +
+    el.innerHTML = "<div class='bs-card ms-card'><button class='bs-x' aria-label='Tutup'>&times;</button><div class='ms-tag'>" + tg.l + " &middot; Laga ke-" + row._n + "</div>" +
       "<div class='hh-main'>" + mcSide_(home, sh, sh > sa) + sbHtml_(sh, sa) + mcSide_(away, sa, sa > sh) + "</div>" +
       "<div class='hh-com' style='margin-bottom:8px'>“" + hCom_(row) + "”</div><div class='cd-facts' style='justify-content:center'>" + facts.map(function (f) { return "<span>" + f + "</span>"; }).join("") + "</div>" +
       "<div class='bs-h'>Rekor pertemuan sepanjang masa</div><div class='ms-h2h'><span>" + escHtml_(home) + " " + w + "</span><span>Seri " + d + "</span><span>" + l + " " + escHtml_(away) + "</span></div>" +

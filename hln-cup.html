@@ -144,7 +144,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
 (function () {
   "use strict";
   var SHEET_ID = "1QHPqO4LEjtR7c6Lp-K8uqJaZnCdfuzAomgwUajF4RbQ", SHEET_TAB = "HLN Cup";
-  var LS_STATE = "hln_state_v1", LS_SYNC = "hln_sync_v1", LS_REMOTE = "hln_remote_v1", LS_CHAMP = "hln_champ_seen";
+  var LS_RESET = "hln_reset_ts", LS_STATE = "hln_state_v1", LS_SYNC = "hln_sync_v1", LS_REMOTE = "hln_remote_v1", LS_CHAMP = "hln_champ_seen";
   var qs = new URLSearchParams(location.search), ADMIN = qs.has("admin"), DEMO = parseInt(qs.get("demo"), 10) || 0;
   var SITE = "https://iihduy.github.io/SHB-League/hln-cup.html";
   var CW = 160, CH = 62, GX = 42, PADT = 38, PADL = 14, UNIT = 80;
@@ -227,12 +227,13 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     renderAll();
     if (ADMIN && !DEMO) { clearTimeout(syncTimer); syncTimer = setTimeout(pushRemote, 900); }
   }
-  function pushRemote() {
+  function pushRemote(payload) {
+    payload = payload || state;
     if (!syncCfg.url || !syncCfg.key) { setSync("Mode lokal: bracket belum terbagi ke penonton. Atur sinkron di bawah, atau salin data manual."); return; }
     setSync("Mengirim ke sheet...");
-    var ts = state.ts;
+    var ts = payload.ts;
     try {
-      fetch(syncCfg.url, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "hln_save", key: syncCfg.key, data: state }) })
+      fetch(syncCfg.url, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "hln_save", key: syncCfg.key, data: payload }) })
         .then(function () { setTimeout(function () { readRemote(function (r) { setSync(r && r.ts === ts ? "✓ Tersinkron ke sheet, penonton sudah bisa melihat." : "⚠ Belum terbaca di sheet. Cek URL, kunci, dan deploy ulang Apps Script (Versi baru)."); }); }, 4000); })
         .catch(function () { setSync("⚠ Gagal mengirim. Cek koneksi."); });
     } catch (e) { setSync("⚠ Gagal mengirim."); }
@@ -247,7 +248,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
       try {
         var cand = [];
         if (resp && resp.table) { if (resp.table.cols && resp.table.cols[0]) cand.push(resp.table.cols[0].label); (resp.table.rows || []).forEach(function (r) { if (r.c && r.c[0]) cand.push(r.c[0].v); }); }
-        cand.forEach(function (t) { if (found || typeof t !== "string" || t.charAt(0) !== "{") return; try { var o = JSON.parse(t); if (o && o.v === 1 && o.slots && o.S) found = o; } catch (e) {} });
+        cand.forEach(function (t) { if (found || typeof t !== "string" || t.charAt(0) !== "{") return; try { var o = JSON.parse(t); if (o && o.v === 1 && ((o.slots && o.S) || o.reset)) found = o; } catch (e) {} });
       } catch (e) {}
       fin(found);
     };
@@ -260,8 +261,9 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     if (DEMO) return;
     readRemote(function (r) {
       if (!r) return;
+      if (r.reset) { lsSet(LS_REMOTE, ""); if (!ADMIN && state) { state = null; sel = null; renderAll(); } return; }
       lsSet(LS_REMOTE, JSON.stringify(r));
-      if (ADMIN) { if (!state) { state = r; lsSet(LS_STATE, JSON.stringify(r)); renderAll(); } return; }
+      if (ADMIN) { var rt = parseInt(lsGet(LS_RESET) || "0", 10); if (!state && r.ts > rt) { state = r; lsSet(LS_STATE, JSON.stringify(r)); renderAll(); } return; }
       if (!state || r.ts !== state.ts) { state = r; renderAll(); }
     });
   }
@@ -382,7 +384,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
         doDraw(names, rnd, function () { state = create(names, rnd, thr); firstDraw = true; $("admin").removeAttribute("data-mode"); persist(); });
       };
     } else {
-      $("rs").onclick = function () { if (confirm("Hapus bracket ini dan mulai yang baru? Hasil yang sudah dimasukkan akan hilang.")) { state = null; sel = null; lsSet(LS_STATE, ""); $("admin").removeAttribute("data-mode"); renderAll(); if (syncCfg.url) { /* bracket kosong tidak dikirim; tab sheet tetap berisi data lama sampai bracket baru dibuat */ } } };
+      $("rs").onclick = function () { if (confirm("Hapus bracket ini dan mulai yang baru? Hasil yang sudah dimasukkan akan hilang.")) { var rts = Date.now(); state = null; sel = null; lsSet(LS_STATE, ""); lsSet(LS_REMOTE, ""); lsSet(LS_RESET, String(rts)); $("admin").removeAttribute("data-mode"); renderAll(); pushRemote({ v: 1, reset: true, ts: rts }); } };
       $("cp").onclick = function () { var t = JSON.stringify(state); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { toast("Data disalin. Tempel di sel A2 tab “HLN Cup”."); }, function () { prompt("Salin data ini:", t); }); else prompt("Salin data ini:", t); };
     }
     $("sy-save").onclick = function () { syncCfg = { url: $("sy-url").value.trim(), key: $("sy-key").value.trim() }; lsSet(LS_SYNC, JSON.stringify(syncCfg)); if (state) pushRemote(); else setSync("Tersimpan. Akan dikirim saat bracket dibuat."); };

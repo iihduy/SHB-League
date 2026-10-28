@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SHB Weekly Cup</title>
+<meta name="theme-color" content="#0B1F17">
+<meta property="og:title" content="SHB Weekly Cup - Bracket Live">
+<meta property="og:description" content="Pohon turnamen SHB Weekly Cup, update langsung selama pertandingan.">
+<meta property="og:image" content="https://iihduy.github.io/SHB-League/logo.png">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0B1F17;--panel:#122E22;--line:#1F4D37;--gold:#E8B33D;--chalk:#F3F1E7;--muted:#8FAF9B;--win:#4ADE80;--lose:#F87171}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:radial-gradient(ellipse at 50% -10%,rgba(232,179,61,.18),transparent 50%),var(--bg);color:var(--chalk);font-family:'Inter',sans-serif;min-height:100vh;padding:0 0 60px}
+.wrap{max-width:980px;margin:0 auto;padding:0 14px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:12px 0 0;font-size:12px}
+.top a{color:var(--muted);text-decoration:none}
+.live{display:inline-flex;align-items:center;gap:6px;font-family:'Oswald',sans-serif;letter-spacing:2px;font-size:11px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.live.on{color:var(--win);border-color:var(--win)}.live.on i{background:var(--win);animation:blink 1.3s infinite}
+.live.end{color:var(--gold);border-color:var(--gold)}.live.end i{background:var(--gold)}
+@keyframes blink{50%{opacity:.2}}
+.hero{text-align:center;padding:18px 0 8px}
+.hero .tr{font-size:54px;filter:drop-shadow(0 0 18px rgba(232,179,61,.6));animation:float 3s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-6px)}}
+.lg{display:inline-block;filter:drop-shadow(0 0 22px rgba(232,179,61,.4))}.lg img{display:block;width:92px;height:auto}
+.hero h1{margin-top:10px;letter-spacing:3px;font-size:31px;white-space:nowrap;font-family:'Oswald',sans-serif;font-size:46px;letter-spacing:6px;margin:0;line-height:1;background:linear-gradient(180deg,#fff,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{margin:6px 0 0;color:var(--muted);font-size:13px}
+.prog{height:5px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin:14px 0 4px}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),#fff);transition:width .8s}
+.progt{font-size:11px;color:var(--muted);text-align:center}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:12px}
+.panel h3{margin:0 0 8px;font-family:'Oswald',sans-serif;font-weight:500;letter-spacing:2px;font-size:12px;color:var(--gold);text-transform:uppercase}
+.nx{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px dashed var(--line);font-size:14px}
+.nx:first-of-type{border-top:0}
+.nx .vs{flex:1;min-width:0}.nx .vs b{font-weight:600}.nx small{display:block;color:var(--muted);font-size:11px}
+.nx button{font-family:'Oswald',sans-serif;font-size:12px;padding:6px 14px;border-radius:99px;border:1px solid var(--gold);background:rgba(232,179,61,.12);color:var(--gold);cursor:pointer;white-space:nowrap}
+.champ{text-align:center;background:linear-gradient(135deg,rgba(232,179,61,.28),var(--panel));border-color:var(--gold)}
+.champ .cn{font-family:'Oswald',sans-serif;font-size:30px;letter-spacing:2px}
+.rchips{display:flex;gap:6px;overflow-x:auto;margin:14px 0 6px;padding-bottom:4px;scrollbar-width:none}
+.rchips::-webkit-scrollbar{display:none}
+.rc{flex-shrink:0;font-size:12px;padding:6px 13px;border-radius:99px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer}
+.rc.on{background:var(--gold);border-color:var(--gold);color:#0B1F17;font-weight:600}
+.zoom{display:flex;gap:6px;justify-content:flex-end;margin-bottom:6px}
+.zoom button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--chalk);font-size:16px;cursor:pointer}
+.bscroll{overflow:auto;border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(0,0,0,.2));-webkit-overflow-scrolling:touch;position:relative}
+.bsize{position:relative}
+.binner{position:absolute;left:0;top:0;transform-origin:0 0}
+.bhead{position:absolute;text-align:center;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
+.bm{position:absolute;border-radius:11px;background:var(--panel);border:1px solid var(--line);overflow:hidden;transition:opacity .3s,border-color .3s,box-shadow .3s}
+.bm.ready{border-color:var(--gold);box-shadow:0 0 0 1px rgba(232,179,61,.3),0 0 18px rgba(232,179,61,.25);animation:rdy 2s ease-in-out infinite}
+@keyframes rdy{50%{box-shadow:0 0 0 1px rgba(232,179,61,.6),0 0 26px rgba(232,179,61,.45)}}
+.bm.dim{opacity:.22}
+.bm.fin{border-color:var(--gold);background:linear-gradient(135deg,rgba(232,179,61,.16),var(--panel))}
+.bm.adm{cursor:pointer}
+.bp{display:flex;align-items:center;justify-content:space-between;gap:6px;height:50%;padding:0 10px;font-size:13px;cursor:pointer;border-left:3px solid transparent}
+.bp+.bp{border-top:1px solid rgba(255,255,255,.07)}
+.bp .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.bp .s{font-family:'Oswald',sans-serif;font-size:16px;min-width:16px;text-align:right}
+.bp.win{border-left-color:var(--win);background:rgba(74,222,128,.09);font-weight:700}
+.bp.win .s{color:var(--win)}
+.bp.lose{opacity:.55}
+.bp.tbd .n{color:var(--muted);font-style:italic;font-size:11px}
+.bp.sel{background:rgba(232,179,61,.22)}
+.pen{font-size:9px;font-family:'Oswald',sans-serif;color:var(--gold);border:1px solid var(--gold);border-radius:4px;padding:0 3px;margin-left:4px}
+.bm.byec{border-style:dashed;background:transparent}.bm.byec .bp{border-left-color:var(--gold)}
+.rl{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px dashed var(--line);font-size:14px}.rl:first-child{border-top:0}.rl .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}.rl .tg{font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer}.rl .tg.on{border-color:var(--gold);background:rgba(232,179,61,.18);color:var(--gold);font-weight:600}.rl input[type=checkbox]{width:18px;height:18px}
+.tag{position:absolute;right:6px;top:-8px;font-size:9px;font-family:'Oswald',sans-serif;letter-spacing:1px;background:var(--gold);color:#0B1F17;padding:1px 7px;border-radius:99px;font-weight:600}
+.bline{fill:none;stroke:rgba(143,175,155,.35);stroke-width:2;transition:stroke .3s}
+.bline.win{stroke:var(--gold)}
+.bline.dim{opacity:.15}
+.bline.hl{stroke:#fff;stroke-width:3}
+.third-l{position:absolute;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+.cup{position:absolute;text-align:center}
+.cup .t{font-size:40px;filter:drop-shadow(0 0 14px rgba(232,179,61,.7))}
+.cup .cn{font-family:'Oswald',sans-serif;font-size:15px;letter-spacing:1px;color:var(--gold);margin-top:2px}
+.btn{font-family:'Oswald',sans-serif;font-size:13px;padding:9px 18px;border-radius:99px;border:1px solid var(--gold);background:var(--gold);color:#0B1F17;font-weight:600;cursor:pointer}
+.btn.sec{background:transparent;color:var(--gold)}
+.btn.wa{background:rgba(37,211,102,.12);border-color:#25D366;color:#4ADE80}
+.btn.dg{background:transparent;border-color:var(--lose);color:var(--lose)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+textarea,input[type=text],input[type=password]{width:100%;background:#0a1912;border:1px solid var(--line);border-radius:10px;color:var(--chalk);font-family:'Inter',sans-serif;font-size:14px;padding:10px}
+textarea{min-height:150px;resize:vertical}
+label.ck{display:flex;gap:8px;align-items:center;font-size:13px;margin-top:8px}
+.hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:6px}
+.ov{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:16px}
+.ov .card{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--gold);border-radius:18px;padding:18px;animation:pop .25s ease}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.96)}}
+.sc{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-top:1px dashed var(--line)}
+.sc:first-of-type{border-top:0}
+.sc .nm{flex:1;font-weight:600;font-size:16px;overflow:hidden;text-overflow:ellipsis}
+.sc .st{display:flex;align-items:center;gap:10px}
+.sc .st button{width:40px;height:40px;border-radius:50%;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:22px;cursor:pointer}
+.sc .st b{font-family:'Oswald',sans-serif;font-size:32px;min-width:34px;text-align:center}
+.pk{display:flex;gap:8px;margin-top:8px}
+.pk button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--chalk);cursor:pointer;font-size:13px}
+.pk button.on{border-color:var(--gold);background:rgba(232,179,61,.18);color:var(--gold);font-weight:600}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#000;border:1px solid var(--gold);color:var(--chalk);padding:9px 16px;border-radius:99px;font-size:12px;z-index:90;opacity:0;pointer-events:none;transition:opacity .3s}
+.toast.on{opacity:1}
+.empty{text-align:center;padding:36px 12px;color:var(--muted);font-size:14px;line-height:1.7}
+.drum{font-family:'Oswald',sans-serif;font-size:34px;text-align:center;color:var(--gold);letter-spacing:2px;min-height:48px;margin:14px 0}
+.ch-ov{position:fixed;inset:0;z-index:70;background:radial-gradient(circle at 50% 30%,rgba(232,179,61,.28),rgba(5,16,11,0) 70%),#06130D;display:none;align-items:center;justify-content:center;padding:18px;text-align:center}
+.ch-ov canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+.ch-ov .in{position:relative;max-width:400px}
+.ch-ov .cr{font-size:70px;animation:float 1.6s ease-in-out infinite}
+.ch-ov h2{font-family:'Oswald',sans-serif;letter-spacing:5px;font-size:15px;color:var(--gold);margin:6px 0}
+.ch-ov .nm{font-family:'Oswald',sans-serif;font-size:50px;line-height:1.05;margin:4px 0 18px}
+.ch-ov .pd{font-size:14px;line-height:2;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.hero .tr,.bm.ready,.live.on i,.ch-ov .cr{animation:none}}
+details{margin-top:12px}
+summary{cursor:pointer;color:var(--gold);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a href="./">&larr; SHB League</a><span class="live" id="live"><i></i><span id="live-t">BELUM MULAI</span></span></div>
+  <div class="hero"><div class="lg"><img src="logo.png" alt="SHB League" width="274" height="300"></div><h1>SHB WEEKLY CUP</h1><p id="sub">Turnamen gugur mingguan</p></div>
+  <div id="prog-box" style="display:none"><div class="prog"><i id="prog"></i></div><div class="progt" id="progt"></div></div>
+
+  <div id="champ"></div>
+  <div id="next"></div>
+
+  <div id="board" style="display:none">
+    <div class="rchips" id="rchips"></div>
+    <div class="zoom"><button id="zo" aria-label="Perkecil">&minus;</button><button id="zi" aria-label="Perbesar">+</button></div>
+    <div class="bscroll" id="bscroll"><div class="bsize" id="bsize"><div class="binner" id="binner"></div></div></div>
+    <div class="row" style="justify-content:center"><button class="btn wa" id="share">Bagikan ke WhatsApp</button></div>
+  </div>
+
+  <div id="empty" class="empty">Bracket SHB Weekly Cup akan muncul di sini<br>setelah daftar pemain ditentukan.<br><span style="font-size:12px">Halaman ini memperbarui diri otomatis.</span></div>
+
+  <div id="admin" style="display:none"></div>
+</div>
+
+<div class="ov" id="sc-ov"><div class="card" id="sc-card"></div></div>
+<div class="ov" id="drum-ov"><div class="card" style="text-align:center"><div style="font-family:'Oswald',sans-serif;letter-spacing:3px;color:var(--muted);font-size:12px">MENGUNDI BRACKET</div><div class="drum" id="drum"></div><div class="hint">Menentukan posisi tiap pemain...</div></div></div>
+<div class="ch-ov" id="ch-ov"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+  var SHEET_ID = "1QHPqO4LEjtR7c6Lp-K8uqJaZnCdfuzAomgwUajF4RbQ", SHEET_TAB = "SHB Weekly Cup";
+  var LS_RESET = "shbw_reset_ts", LS_STATE = "shbw_state_v1", LS_SYNC = "hln_sync_v1", LS_REMOTE = "shbw_remote_v1", LS_CHAMP = "shbw_champ_seen";
+  var qs = new URLSearchParams(location.search), ADMIN = qs.has("admin"), DEMO = parseInt(qs.get("demo"), 10) || 0;
+  var SITE = "https://iihduy.github.io/SHB-League/shb-weekly.html";
+  var CW = 160, CH = 62, GX = 42, PADT = 38, PADL = 14, UNIT = 80;
+
+  var state = null, sel = null, zoom = 1, shown = {}, firstDraw = true;
+  function $(id) { return document.getElementById(id); }
+  function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/'/g, "&#39;").replace(/"/g, "&quot;"); }
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function toast(t) { var el = $("toast"); el.textContent = t; el.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(function () { el.classList.remove("on"); }, 2600); }
+
+  // ---------- model ----------
+  function nextPow2(n) { var p = 1; while (p < n) p *= 2; return p; }
+  function seedOrder(S) {
+    var a = [1];
+    while (a.length < S) { var n = [], t = a.length * 2 + 1; a.forEach(function (x) { n.push(x, t - x); }); a = n; }
+    return a;
+  }
+  function rapi(n) { return n.trim().replace(/\s+/g, " ").split(" ").map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); }).join(" "); }
+  function parseNames(txt) {
+    var seen = {}, out = [];
+    txt.split(/[\n,;]+/).forEach(function (x) { x = rapi(x); if (!x) return; var k = x.toLowerCase(); if (seen[k]) return; seen[k] = 1; out.push(x); });
+    return out;
+  }
+  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function create(names, rnd, third, top, edition) {
+    top = (top || []).filter(function (t) { return names.indexOf(t) >= 0; });
+    var rest = names.filter(function (x) { return top.indexOf(x) < 0; });
+    var n = names.length, S = nextPow2(n), seeds = rnd ? shuffle(top).concat(shuffle(rest)) : top.concat(rest);
+    var slots = seedOrder(S).map(function (s) { return s <= n ? seeds[s - 1] : null; });
+    return { v: 1, title: "SHB Weekly Cup", n: n, S: S, slots: slots, third: !!third && S >= 4, top: top, edition: edition || "", results: {}, ts: Date.now(), date: new Date().toISOString().slice(0, 10) };
+  }
+  function resolve(mt, st) {
+    var res = st.results[mt.id];
+    if (mt.r === 0 && ((mt.p1 === null) !== (mt.p2 === null))) { mt.bye = true; mt.winner = mt.p1 || mt.p2; mt.done = true; return; }
+    if (mt.p1 && mt.p2 && res && res.a === mt.p1 && res.b === mt.p2) {
+      mt.s1 = res.s1; mt.s2 = res.s2; mt.pw = res.pw || null;
+      var w = res.s1 > res.s2 ? mt.p1 : (res.s2 > res.s1 ? mt.p2 : (res.pw === mt.p1 || res.pw === mt.p2 ? res.pw : null));
+      if (w) { mt.winner = w; mt.loser = w === mt.p1 ? mt.p2 : mt.p1; mt.done = true; }
+    }
+  }
+  function derive(st) {
+    var R = Math.round(Math.log(st.S) / Math.log(2)), rounds = [], r, m;
+    for (r = 0; r < R; r++) {
+      var arr = [], cnt = st.S / Math.pow(2, r + 1);
+      for (m = 0; m < cnt; m++) {
+        var mt = { id: "r" + r + "m" + m, r: r, m: m, p1: null, p2: null, s1: null, s2: null, pw: null, winner: null, loser: null, done: false, bye: false };
+        if (r === 0) { mt.p1 = st.slots[2 * m]; mt.p2 = st.slots[2 * m + 1]; }
+        else { mt.p1 = rounds[r - 1][2 * m].winner; mt.p2 = rounds[r - 1][2 * m + 1].winner; }
+        resolve(mt, st); arr.push(mt);
+      }
+      rounds.push(arr);
+    }
+    var third = null;
+    if (st.third && R >= 2) {
+      var sm = rounds[R - 2];
+      if (sm.length === 2 && !sm[0].bye && !sm[1].bye) {
+        third = { id: "third", r: R - 1, m: 1, p1: sm[0].loser, p2: sm[1].loser, s1: null, s2: null, pw: null, winner: null, loser: null, done: false, bye: false, isThird: true };
+        resolve(third, st);
+      }
+    }
+    var fin = rounds[R - 1][0];
+    return { R: R, rounds: rounds, third: third, champ: fin.winner, fin: fin, runner: fin.loser, thirdW: third ? third.winner : null };
+  }
+  function roundName(r, R) {
+    var d = R - 1 - r;
+    if (r === 0 && R >= 4) return "Babak 1";
+    return d === 0 ? "Final" : d === 1 ? "Semifinal" : d === 2 ? "Perempat Final" : d === 3 ? "16 Besar" : "32 Besar";
+  }
+  function allMatches(D) { var a = []; D.rounds.forEach(function (rr) { rr.forEach(function (m) { a.push(m); }); }); if (D.third) a.push(D.third); return a; }
+  function readyList(D) {
+    return allMatches(D).filter(function (m) { return m.p1 && m.p2 && !m.done && !m.bye; }).sort(function (a, b) {
+      var ka = a.isThird ? D.R - 1.5 : a.r, kb = b.isThird ? D.R - 1.5 : b.r; return ka - kb || a.m - b.m; });
+  }
+  function counts(D) { var real = allMatches(D).filter(function (m) { return !m.bye && !(m.r === 0 && (m.p1 === null || m.p2 === null)); }); return { total: real.length, done: real.filter(function (m) { return m.done; }).length }; }
+
+  // ---------- simpan & sinkron ----------
+  var syncCfg = (function () { try { return JSON.parse(lsGet(LS_SYNC) || "{}"); } catch (e) { return {}; } })();
+  var syncTimer = null, syncMsg = "";
+  function persist() {
+    state.ts = Date.now();
+    if (!DEMO) lsSet(LS_STATE, JSON.stringify(state));
+    renderAll();
+    if (ADMIN && !DEMO) { clearTimeout(syncTimer); syncTimer = setTimeout(pushRemote, 900); }
+  }
+  function pushRemote(payload) {
+    payload = payload || state;
+    if (!syncCfg.url || !syncCfg.key) { setSync("Mode lokal: bracket belum terbagi ke penonton. Atur sinkron di bawah, atau salin data manual."); return; }
+    setSync("Mengirim ke sheet...");
+    var ts = payload.ts;
+    try {
+      fetch(syncCfg.url, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "hln_save", sheet: SHEET_TAB, key: syncCfg.key, data: payload }) })
+        .then(function () { setTimeout(function () { readRemote(function (r) { setSync(r && r.ts === ts ? "✓ Tersinkron ke sheet, penonton sudah bisa melihat." : "⚠ Belum terbaca di sheet. Cek URL, kunci, dan deploy ulang Apps Script (Versi baru)."); }); }, 4000); })
+        .catch(function () { setSync("⚠ Gagal mengirim. Cek koneksi."); });
+    } catch (e) { setSync("⚠ Gagal mengirim."); }
+  }
+  function setSync(t) { syncMsg = t; var el = $("sync-msg"); if (el) el.textContent = t; }
+  var gcount = 0;
+  function readRemote(cb) {
+    var name = "__hln_cb_" + (++gcount) + "_" + Math.random().toString(36).slice(2), done = false, sc = document.createElement("script");
+    function fin(v) { if (done) return; done = true; try { delete window[name]; } catch (e) { window[name] = undefined; } if (sc.parentNode) sc.parentNode.removeChild(sc); cb(v); }
+    window[name] = function (resp) {
+      var found = null;
+      try {
+        var cand = [];
+        if (resp && resp.table) { if (resp.table.cols && resp.table.cols[0]) cand.push(resp.table.cols[0].label); (resp.table.rows || []).forEach(function (r) { if (r.c && r.c[0]) cand.push(r.c[0].v); }); }
+        cand.forEach(function (t) { if (found || typeof t !== "string" || t.charAt(0) !== "{") return; try { var o = JSON.parse(t); if (o && o.v === 1 && ((o.slots && o.S) || o.reset)) found = o; } catch (e) {} });
+      } catch (e) {}
+      fin(found);
+    };
+    sc.src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=responseHandler:" + name + "&sheet=" + encodeURIComponent(SHEET_TAB) + "&range=A1:A2&headers=0&_=" + Date.now();
+    sc.onerror = function () { fin(null); };
+    setTimeout(function () { fin(null); }, 12000);
+    document.body.appendChild(sc);
+  }
+  function pollRemote() {
+    if (DEMO) return;
+    readRemote(function (r) {
+      if (!r) return;
+      if (r.reset) { lsSet(LS_REMOTE, ""); if (!ADMIN && state) { state = null; sel = null; renderAll(); } return; }
+      lsSet(LS_REMOTE, JSON.stringify(r));
+      if (ADMIN) { var rt = parseInt(lsGet(LS_RESET) || "0", 10); if (!state && r.ts > rt) { state = r; lsSet(LS_STATE, JSON.stringify(r)); renderAll(); } return; }
+      if (!state || r.ts !== state.ts) { state = r; renderAll(); }
+    });
+  }
+
+  // ---------- render ----------
+  function layout(D, st) {
+    var pos = {}, R = D.R, r, m, h0 = st.S / 2;
+    for (r = 0; r < R; r++) D.rounds[r].forEach(function (mt) {
+      var y = r === 0 ? PADT + mt.m * UNIT : (pos[D.rounds[r - 1][2 * mt.m].id].y + pos[D.rounds[r - 1][2 * mt.m + 1].id].y) / 2;
+      pos[mt.id] = { x: PADL + r * (CW + GX), y: y };
+    });
+    var H = PADT + h0 * UNIT, fy = pos[D.fin.id].y, fx = pos[D.fin.id].x;
+    if (D.third) { pos.third = { x: fx, y: fy + CH + 70 }; H = Math.max(H, pos.third.y + CH + 14); }
+    return { pos: pos, W: PADL + (R + 1) * (CW + GX), H: H + 6, cup: { x: fx + CW + GX - 6, y: fy + CH / 2 - 52 } };
+  }
+  function isTop(p) { return !!(state && state.top && state.top.indexOf(p) >= 0); }
+  function playerRow(mt, which, canEdit) {
+    var p = which === 1 ? mt.p1 : mt.p2, s = which === 1 ? mt.s1 : mt.s2;
+    if (!p) return "<div class='bp tbd'><span class='n'>" + (mt.r === 0 && mt.bye ? "BYE" : "menunggu pemenang") + "</span><span class='s'></span></div>";
+    var cls = "bp", isW = mt.done && mt.winner === p, isL = mt.done && mt.loser === p && !mt.bye;
+    if (isW) cls += " win"; if (isL) cls += " lose"; if (sel === p) cls += " sel";
+    return "<div class='" + cls + "' data-p='" + esc(p) + "'><span class='n'>" + (isTop(p) ? "\u{1F947} " : "") + esc(p) + (isW && mt.pw ? "<span class='pen'>PEN</span>" : "") + "</span><span class='s'>" + (s === null || s === undefined ? "" : s) + "</span></div>";
+  }
+  function cardHtml(mt, pos, ready) {
+    var inv = sel && (mt.p1 === sel || mt.p2 === sel);
+    var cls = "bm" + (ready ? " ready" : "") + (sel && !inv ? " dim" : "") + (mt.isThird ? "" : "") + (ADMIN && mt.p1 && mt.p2 && !mt.bye ? " adm" : "");
+    return "<div class='" + cls + "' data-id='" + mt.id + "' style='left:" + pos.x + "px;top:" + pos.y + "px;width:" + CW + "px;height:" + CH + "px'>" +
+      (ready ? "<span class='tag'>SIAP MAIN</span>" : "") + playerRow(mt, 1) + playerRow(mt, 2) + "</div>";
+  }
+  function renderBoard(D) {
+    var L = layout(D, state), rd = {}, h = "", svg = "";
+    readyList(D).forEach(function (m) { rd[m.id] = 1; });
+    D.rounds.forEach(function (rr, r) {
+      h += "<div class='bhead' style='left:" + (PADL + r * (CW + GX)) + "px;top:8px;width:" + CW + "px'>" + roundName(r, D.R) + "</div>";
+      rr.forEach(function (mt) {
+        if (r > 0) [D.rounds[r - 1][2 * mt.m], D.rounds[r - 1][2 * mt.m + 1]].forEach(function (f) {
+          var a = L.pos[f.id], b = L.pos[mt.id], x1 = a.x + CW, y1 = a.y + CH / 2, x2 = b.x, y2 = b.y + CH / 2, xm = (x1 + x2) / 2;
+          var c = "bline" + (f.done && f.winner ? " win" : "") + (sel ? (f.winner === sel && (mt.p1 === sel || mt.p2 === sel) ? " hl" : " dim") : "");
+          svg += "<path class='" + c + "' d='M" + x1 + " " + y1 + "H" + xm + "V" + y2 + "H" + x2 + "'/>";
+        });
+        if (r === 0 && mt.bye) {
+          var bp = L.pos[mt.id], bw = mt.winner, bc = "bm byec" + (sel && bw !== sel ? " dim" : "");
+          h += "<div class='" + bc + "' data-id='" + mt.id + "' style='left:" + bp.x + "px;top:" + (bp.y + CH / 2 - 17) + "px;width:" + CW + "px;height:34px'><div class='bp' style='height:100%' data-p='" + esc(bw) + "'><span class='n'>" + (isTop(bw) ? "\u{1F947} " : "") + esc(bw) + "</span><span class='s' style='font-size:9px;font-family:Inter,sans-serif;color:var(--muted)'>langsung</span></div></div>";
+        } else h += cardHtml(mt, L.pos[mt.id], rd[mt.id]);
+      });
+    });
+    // trophy + garis ke piala
+    var fp = L.pos[D.fin.id];
+    svg += "<path class='bline" + (D.champ ? " win" : "") + "' d='M" + (fp.x + CW) + " " + (fp.y + CH / 2) + "H" + (L.cup.x + 6) + "'/>";
+    h += "<div class='cup' style='left:" + L.cup.x + "px;top:" + L.cup.y + "px;width:" + (CW - 20) + "px'><div class='t'>" + (D.champ ? "\u{1F451}" : "\u{1F3C6}") + "</div><div class='cn'>" + (D.champ ? esc(D.champ) : "JUARA") + "</div></div>";
+    if (D.third) { h += "<div class='third-l' style='left:" + L.pos.third.x + "px;top:" + (L.pos.third.y - 22) + "px'>Perebutan Juara 3</div>" + cardHtml(D.third, L.pos.third, rd.third); }
+    var bi = $("binner"); bi.style.width = L.W + "px"; bi.style.height = L.H + "px"; bi.style.transform = "scale(" + zoom + ")";
+    bi.innerHTML = "<svg width='" + L.W + "' height='" + L.H + "' style='position:absolute;left:0;top:0;pointer-events:none'>" + svg + "</svg>" + h;
+    $("bsize").style.width = (L.W * zoom) + "px"; $("bsize").style.height = (L.H * zoom) + "px";
+    $("bscroll").setAttribute("data-w", L.W);
+  }
+  function renderChips(D) {
+    var el = $("rchips"), cur = currentRound(D), h = "";
+    D.rounds.forEach(function (rr, r) { h += "<button class='rc" + (cur === r ? " on" : "") + "' data-r='" + r + "'>" + roundName(r, D.R) + "</button>"; });
+    el.innerHTML = h;
+  }
+  function currentRound(D) {
+    var bs = $("bscroll"), x = bs.scrollLeft / zoom, r = Math.max(0, Math.min(D.R - 1, Math.round((x - PADL) / (CW + GX))));
+    return r;
+  }
+  function renderTop(D) {
+    var C = counts(D), pct = C.total ? Math.round(C.done / C.total * 100) : 0, live = $("live"), rd = readyList(D);
+    $("prog-box").style.display = "block"; $("prog").style.width = pct + "%"; $("progt").textContent = C.done + " dari " + C.total + " pertandingan selesai (" + pct + "%)";
+    live.className = "live " + (D.champ ? "end" : (C.done > 0 ? "on" : "")); $("live-t").textContent = D.champ ? "SELESAI" : (C.done > 0 ? "LIVE" : "SEGERA");
+    var dt = state.date ? new Date(state.date + "T12:00:00") : null;
+    $("sub").textContent = (state.edition ? state.edition + " \u00B7 " : "") + (dt ? dt.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) + " · " : "") + state.n + " pemain · gugur";
+    var ch = $("champ"), nx = $("next");
+    if (D.champ) {
+      ch.innerHTML = "<div class='panel champ'><h3>Juara SHB Weekly Cup</h3><div style='font-size:40px'>\u{1F451}</div><div class='cn'>" + esc(D.champ) + "</div><div class='hint' style='font-size:12px'>" +
+        (D.runner ? "\u{1F948} " + esc(D.runner) : "") + (D.thirdW ? " &nbsp; \u{1F949} " + esc(D.thirdW) : "") + "</div></div>";
+      nx.innerHTML = "";
+      showChamp(D);
+    } else {
+      ch.innerHTML = "";
+      nx.innerHTML = "<div class='panel'><h3>Giliran main</h3>" + (rd.length ? rd.slice(0, 4).map(function (m) {
+        return "<div class='nx'><div class='vs'><b>" + esc(m.p1) + "</b> vs <b>" + esc(m.p2) + "</b><small>" + (m.isThird ? "Perebutan Juara 3" : roundName(m.r, D.R)) + "</small></div>" + (ADMIN ? "<button data-id='" + m.id + "'>Isi skor</button>" : "") + "</div>";
+      }).join("") : "<div class='hint'>Menunggu pemenang babak sebelumnya...</div>") + "</div>";
+    }
+  }
+  function renderAll() {
+    if (!state) { $("board").style.display = "none"; $("empty").style.display = ""; $("prog-box").style.display = "none"; $("next").innerHTML = ""; $("champ").innerHTML = ""; renderAdmin(); return; }
+    var D = derive(state);
+    $("empty").style.display = "none"; $("board").style.display = "";
+    renderTop(D); renderBoard(D); renderChips(D); renderAdmin(D);
+    if (firstDraw) { firstDraw = false; }
+  }
+
+  // ---------- admin ----------
+  function renderAdmin(D) {
+    var el = $("admin"); if (!ADMIN) { el.style.display = "none"; return; }
+    el.style.display = "";
+    if (el.getAttribute("data-mode") === (state ? "run" : "setup") && el.firstChild && !DEMO && state) { return; }
+    el.setAttribute("data-mode", state ? "run" : "setup");
+    var cfg = syncCfg;
+    var h = "<div class='panel'><h3>Panel admin</h3>";
+    if (!state) {
+      h += "<div class='hint' style='margin:0 0 8px'>Peserta diambil otomatis dari klasemen SHB League. Centang yang ikut, dan tandai \u{1F947} Kasta 1 bulan lalu (langsung masuk babak 2). Semua bisa diubah.</div>" +
+        "<div id='ro'></div>" +
+        "<div class='row' style='margin-top:6px'><input type='text' id='ro-add' placeholder='Tambah nama peserta lain' style='flex:1;min-width:0'><button class='btn sec' id='ro-addb'>Tambah</button></div>" +
+        "<input type='text' id='edn' placeholder='Nama edisi (opsional), mis. Pekan 1' style='margin-top:8px'>" +
+        "<div class='hint' id='cnt' style='color:var(--gold)'></div>" +
+        "<label class='ck'><input type='checkbox' id='rnd' checked> Undi acak posisi (Kasta 1 dan peserta lain diundi terpisah)</label>" +
+        "<label class='ck'><input type='checkbox' id='thr' checked> Ada perebutan juara 3</label>" +
+        "<div class='row'><button class='btn' id='mk'>\u{1F3B2} Undi &amp; buat bracket</button><button class='btn sec' id='ro-reload'>Muat ulang peserta</button></div>";
+    } else {
+      h += "<div class='hint' style='margin:0 0 8px'>Ketuk pertandingan (atau “Isi skor”) untuk memasukkan hasil. Pemenang maju otomatis.</div>" +
+        "<div class='row'><button class='btn sec' id='rs'>Bracket baru / reset</button><button class='btn sec' id='cp'>Salin data (manual)</button></div>";
+    }
+    h += "<details><summary>Sinkron ke penonton (Apps Script)</summary><div class='hint'>Supaya teman bisa melihat bracket live, isi URL web app Apps Script dan kunci rahasia yang sama dengan HLN CUP (tersimpan di browser ini, jadi kalau sudah diisi untuk HLN tidak perlu lagi). Tersimpan hanya di browser ini.</div>" +
+      "<input type='text' id='sy-url' placeholder='https://script.google.com/macros/s/.../exec' value='" + esc(cfg.url || "") + "' style='margin-top:6px'>" +
+      "<input type='password' id='sy-key' placeholder='Kunci rahasia' value='" + esc(cfg.key || "") + "' style='margin-top:6px'>" +
+      "<div class='row'><button class='btn sec' id='sy-save'>Simpan &amp; kirim</button></div><div class='hint' id='sync-msg'>" + esc(syncMsg) + "</div>" +
+      "<div class='hint'>Alternatif tanpa Apps Script: buat tab bernama <b>SHB Weekly Cup</b> di Google Sheet, lalu tempel hasil “Salin data” ke sel <b>A2</b> setiap kali ingin memperbarui.</div></details></div>";
+    el.innerHTML = h;
+    if (!state) {
+      drawRoster();
+      $("ro-addb").onclick = function () { var v = rapi($("ro-add").value); if (!v) return; if (!roster.some(function (x) { return x.n.toLowerCase() === v.toLowerCase(); })) roster.push({ n: v, on: true, top: false }); $("ro-add").value = ""; drawRoster(); };
+      $("ro-reload").onclick = function () { loadRoster(true); };
+      $("mk").onclick = function () {
+        var on = roster.filter(function (x) { return x.on; }), names = on.map(function (x) { return x.n; }), top = on.filter(function (x) { return x.top; }).map(function (x) { return x.n; });
+        if (names.length < 2) { toast("Minimal 2 peserta"); return; } if (names.length > 32) { toast("Maksimal 32 peserta"); return; }
+        var rnd = $("rnd").checked, thr = $("thr").checked, edn = $("edn").value.trim();
+        doDraw(names, rnd, function () { state = create(names, rnd, thr, top, edn); firstDraw = true; $("admin").removeAttribute("data-mode"); persist(); });
+      };
+    } else {
+      $("rs").onclick = function () { if (confirm("Hapus bracket ini dan mulai yang baru? Hasil yang sudah dimasukkan akan hilang.")) { var rts = Date.now(); state = null; sel = null; lsSet(LS_STATE, ""); lsSet(LS_REMOTE, ""); lsSet(LS_RESET, String(rts)); $("admin").removeAttribute("data-mode"); renderAll(); loadRoster(true); pushRemote({ v: 1, reset: true, ts: rts }); } };
+      $("cp").onclick = function () { var t = JSON.stringify(state); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { toast("Data disalin. Tempel di sel A2 tab “SHB Weekly Cup”."); }, function () { prompt("Salin data ini:", t); }); else prompt("Salin data ini:", t); };
+    }
+    $("sy-save").onclick = function () { syncCfg = { url: $("sy-url").value.trim(), key: $("sy-key").value.trim() }; lsSet(LS_SYNC, JSON.stringify(syncCfg)); if (state) pushRemote(); else setSync("Tersimpan. Akan dikirim saat bracket dibuat."); };
+  }
+  var roster = [], rosterLoaded = false;
+  function drawRoster() {
+    var el = $("ro"); if (!el) return;
+    if (!roster.length) { el.innerHTML = "<div class='hint'>" + (rosterLoaded ? "Daftar kosong. Tambahkan nama manual di bawah." : "Memuat peserta dari liga...") + "</div>"; updCount(); return; }
+    el.innerHTML = roster.map(function (x, i) { return "<div class='rl'><input type='checkbox' data-i='" + i + "' " + (x.on ? "checked" : "") + "><span class='nm'>" + esc(x.n) + "</span><button class='tg" + (x.top ? " on" : "") + "' data-t='" + i + "'>\u{1F947} Kasta 1</button></div>"; }).join("");
+    el.onclick = function (e) {
+      var t = e.target; if (!t || !t.getAttribute) return;
+      if (t.getAttribute("data-t") !== null) { var i = +t.getAttribute("data-t"); roster[i].top = !roster[i].top; if (roster[i].top) roster[i].on = true; drawRoster(); }
+      else if (t.getAttribute("data-i") !== null) { roster[+t.getAttribute("data-i")].on = t.checked; updCount(); }
+    };
+    updCount();
+  }
+  function updCount() {
+    var c = $("cnt"); if (!c) return;
+    var on = roster.filter(function (x) { return x.on; }), n = on.length, tp = on.filter(function (x) { return x.top; }).length, S = n >= 2 ? nextPow2(n) : 0, by = S - n, t = n + " peserta";
+    if (S) { t += " \u2192 bracket " + S + " slot, " + by + " langsung maju (BYE)"; if (tp && by < tp) t += ". \u26A0 Hanya " + by + " dari " + tp + " Kasta 1 yang bisa langsung babak 2 pada jumlah ini."; else if (tp && by > tp) t += ". " + (by - tp) + " peserta non-Kasta 1 juga dapat BYE (hasil undian)."; else if (tp) t += " \u2014 pas untuk " + tp + " Kasta 1."; }
+    c.textContent = t;
+  }
+  function loadRoster(force) {
+    if (rosterLoaded && !force) return;
+    var name = "__shbw_ro_" + Math.random().toString(36).slice(2), sc = document.createElement("script"), fin = false;
+    function done(list) { if (fin) return; fin = true; try { delete window[name]; } catch (e) { window[name] = undefined; } if (sc.parentNode) sc.parentNode.removeChild(sc); rosterLoaded = true; if (list && list.length) { roster = list; } if (!state) drawRoster(); }
+    window[name] = function (resp) {
+      var out = [];
+      try { (resp.table.rows || []).forEach(function (r) { var v = r.c && r.c[1] ? (r.c[1].f != null ? r.c[1].f : r.c[1].v) : null; if (!v) return; v = String(v).trim(); var top = v.indexOf("\u{1F947}") === 0; var nm = v.replace(/^(\u{1F947}|\u{1F948}|\u{1F949}|\u{1F195})\s*/u, "").trim(); if (nm) out.push({ n: nm, on: true, top: top }); }); } catch (e) {}
+      done(out);
+    };
+    sc.src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=responseHandler:" + name + "&gid=696233348&range=M2:V50&headers=0&_=" + Date.now();
+    sc.onerror = function () { done(null); }; setTimeout(function () { done(null); }, 12000);
+    document.body.appendChild(sc);
+  }
+  function doDraw(names, rnd, done) {
+    if (!rnd) { done(); return; }
+    var ov = $("drum-ov"), dr = $("drum"), t = 0, iv; ov.style.display = "flex";
+    iv = setInterval(function () { dr.textContent = names[Math.floor(Math.random() * names.length)]; t += 70; if (t >= 1900) { clearInterval(iv); dr.textContent = "✨"; setTimeout(function () { ov.style.display = "none"; done(); }, 350); } }, 70);
+  }
+
+  // ---------- modal skor ----------
+  var cur = null;
+  function openScore(id) {
+    if (!ADMIN || !state) return;
+    var D = derive(state), mt = allMatches(D).filter(function (m) { return m.id === id; })[0];
+    if (!mt || !mt.p1 || !mt.p2 || mt.bye) return;
+    cur = { id: id, p1: mt.p1, p2: mt.p2, s1: mt.s1 === null ? 0 : mt.s1, s2: mt.s2 === null ? 0 : mt.s2, pw: mt.pw, had: !!state.results[id], title: mt.isThird ? "Perebutan Juara 3" : roundName(mt.r, D.R) };
+    drawScore(); $("sc-ov").style.display = "flex";
+  }
+  function drawScore() {
+    var c = cur, tie = c.s1 === c.s2;
+    $("sc-card").innerHTML = "<div style='text-align:center;font-family:Oswald,sans-serif;letter-spacing:3px;color:var(--gold);font-size:12px;text-transform:uppercase'>" + esc(c.title) + "</div>" +
+      "<div class='sc' style='margin-top:8px'><div class='nm'>" + esc(c.p1) + "</div><div class='st'><button data-k='s1-'>&minus;</button><b>" + c.s1 + "</b><button data-k='s1+'>+</button></div></div>" +
+      "<div class='sc'><div class='nm'>" + esc(c.p2) + "</div><div class='st'><button data-k='s2-'>&minus;</button><b>" + c.s2 + "</b><button data-k='s2+'>+</button></div></div>" +
+      (tie ? "<div class='hint' style='margin-top:8px;color:var(--gold)'>Skor seri. Pilih pemenang adu penalti:</div><div class='pk'><button data-pw='1' class='" + (c.pw === c.p1 ? "on" : "") + "'>" + esc(c.p1) + "</button><button data-pw='2' class='" + (c.pw === c.p2 ? "on" : "") + "'>" + esc(c.p2) + "</button></div>" : "") +
+      "<div class='row' style='justify-content:flex-end'>" + (c.had ? "<button class='btn dg' data-k='del'>Hapus hasil</button>" : "") + "<button class='btn sec' data-k='cancel'>Batal</button><button class='btn' data-k='save'>Simpan</button></div>";
+  }
+  $("sc-card").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("button") : null; if (!b || !cur) return;
+    var k = b.getAttribute("data-k"), pw = b.getAttribute("data-pw");
+    if (pw) { cur.pw = pw === "1" ? cur.p1 : cur.p2; drawScore(); return; }
+    if (k === "s1+") cur.s1 = Math.min(99, cur.s1 + 1); else if (k === "s1-") cur.s1 = Math.max(0, cur.s1 - 1);
+    else if (k === "s2+") cur.s2 = Math.min(99, cur.s2 + 1); else if (k === "s2-") cur.s2 = Math.max(0, cur.s2 - 1);
+    else if (k === "cancel") { $("sc-ov").style.display = "none"; cur = null; return; }
+    else if (k === "del") { delete state.results[cur.id]; $("sc-ov").style.display = "none"; cur = null; persist(); return; }
+    else if (k === "save") {
+      if (cur.s1 === cur.s2 && cur.pw !== cur.p1 && cur.pw !== cur.p2) { toast("Pilih pemenang adu penalti"); return; }
+      state.results[cur.id] = { a: cur.p1, b: cur.p2, s1: cur.s1, s2: cur.s2, pw: cur.s1 === cur.s2 ? cur.pw : null };
+      $("sc-ov").style.display = "none"; cur = null; persist(); return;
+    }
+    if (cur.s1 !== cur.s2) cur.pw = null;
+    drawScore();
+  });
+
+  // ---------- juara ----------
+  function confetti(cv) {
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    var c = cv.getContext("2d"), W = cv.width = innerWidth, H = cv.height = innerHeight, cols = ["#E8B33D", "#4ADE80", "#F3F1E7", "#60A5FA", "#F472B6"], ps = [], i;
+    for (i = 0; i < 170; i++) ps.push({ x: Math.random() * W, y: -20 - Math.random() * H * 0.6, vx: (Math.random() - 0.5) * 2.4, vy: 2 + Math.random() * 3.6, r: 4 + Math.random() * 5, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.3, c: cols[i % cols.length] });
+    var t0 = null;
+    function f(ts) { if (t0 === null) t0 = ts; c.clearRect(0, 0, W, H); ps.forEach(function (p) { p.x += p.vx; p.y += p.vy; p.a += p.va; c.save(); c.translate(p.x, p.y); c.rotate(p.a); c.fillStyle = p.c; c.fillRect(-p.r / 2, -p.r / 3, p.r, p.r * 0.6); c.restore(); }); if (ts - t0 < 7000 && $("ch-ov").style.display !== "none") requestAnimationFrame(f); else c.clearRect(0, 0, W, H); }
+    requestAnimationFrame(f);
+  }
+  function showChamp(D) {
+    var key = D.champ + "|" + state.ts0, seen = lsGet(LS_CHAMP);
+    var id = D.champ + "@" + state.date + "#" + state.n + "#" + state.slots.join(",");
+    if (seen === id || DEMO) return;
+    var el = $("ch-ov");
+    el.innerHTML = "<canvas id='ch-cv'></canvas><div class='in'><div class='cr'>\u{1F451}</div><h2>JUARA SHB WEEKLY CUP</h2><div class='nm'>" + esc(D.champ) + "</div><div class='pd'>" + (D.runner ? "\u{1F948} Runner-up: <b>" + esc(D.runner) + "</b><br>" : "") + (D.thirdW ? "\u{1F949} Juara 3: <b>" + esc(D.thirdW) + "</b><br>" : "") + "</div><div class='row' style='justify-content:center'><button class='btn' id='ch-x'>Lihat bracket</button></div></div>";
+    el.style.display = "flex"; confetti($("ch-cv"));
+    $("ch-x").onclick = function () { el.style.display = "none"; lsSet(LS_CHAMP, id); };
+  }
+
+  // ---------- interaksi umum ----------
+  $("binner").addEventListener("click", function (e) {
+    var p = e.target.closest ? e.target.closest(".bp[data-p]") : null, c = e.target.closest ? e.target.closest(".bm") : null;
+    if (ADMIN && c && c.classList.contains("adm")) { openScore(c.getAttribute("data-id")); return; }
+    if (p) { var n = p.getAttribute("data-p"); sel = sel === n ? null : n; renderAll(); return; }
+    if (sel) { sel = null; renderAll(); }
+  });
+  $("next").addEventListener("click", function (e) { var b = e.target.closest ? e.target.closest("button[data-id]") : null; if (b) openScore(b.getAttribute("data-id")); });
+  $("rchips").addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest(".rc") : null; if (!b) return;
+    $("bscroll").scrollTo({ left: (PADL + Number(b.getAttribute("data-r")) * (CW + GX) - 10) * zoom, behavior: "smooth" });
+  });
+  var scT = null;
+  $("bscroll").addEventListener("scroll", function () { clearTimeout(scT); scT = setTimeout(function () { if (state) renderChips(derive(state)); }, 80); }, { passive: true });
+  function setZoom(z) { zoom = Math.max(0.6, Math.min(1.3, z)); if (state) renderBoard(derive(state)); }
+  $("zi").onclick = function () { setZoom(zoom + 0.15); }; $("zo").onclick = function () { setZoom(zoom - 0.15); };
+  $("share").onclick = function () {
+    if (!state) return; var D = derive(state), rd = readyList(D), t = "\u{1F3C6} SHB WEEKLY CUP\n";
+    if (D.champ) t += "\u{1F451} Juara: " + D.champ + (D.runner ? "\n\u{1F948} " + D.runner : "") + (D.thirdW ? "\n\u{1F949} " + D.thirdW : "") + "\n";
+    else { var C = counts(D); t += C.done + "/" + C.total + " pertandingan selesai\n"; if (rd.length) t += "\nSiap main:\n" + rd.slice(0, 3).map(function (m) { return "• " + m.p1 + " vs " + m.p2 + " (" + (m.isThird ? "Juara 3" : roundName(m.r, D.R)) + ")"; }).join("\n") + "\n"; }
+    t += "\nBracket live: " + SITE;
+    if (navigator.share) navigator.share({ text: t }).catch(function () {}); else window.open("https://wa.me/?text=" + encodeURIComponent(t), "_blank", "noopener");
+  };
+  $("sc-ov").addEventListener("click", function (e) { if (e.target === $("sc-ov")) { $("sc-ov").style.display = "none"; cur = null; } });
+
+  // ---------- start ----------
+  if (DEMO) {
+    var nm = ["Yudhi", "Anas", "Firman", "Yans", "Muyik", "Aji", "Wawan", "Gala", "David", "Iskandar", "Andhika", "Aldo", "Dodi", "Eko", "Fajar", "Gita"].slice(0, Math.max(2, Math.min(32, DEMO)));
+    state = create(nm, false, true, nm.slice(0, 4)); state.date = new Date().toISOString().slice(0, 10);
+    var D0 = derive(state), guard = 0;
+    while (guard++ < 60) { var rl = readyList(D0); if (!rl.length || (qs.get("upto") && counts(D0).done >= parseInt(qs.get("upto"), 10))) break; var m0 = rl[0]; state.results[m0.id] = { a: m0.p1, b: m0.p2, s1: 2 + (guard % 3), s2: guard % 2, pw: null }; D0 = derive(state); }
+  } else {
+    var saved = lsGet(LS_STATE), cached = lsGet(LS_REMOTE);
+    try { if (saved) state = JSON.parse(saved); } catch (e) {}
+    if (!state && !ADMIN) { try { if (cached) state = JSON.parse(cached); } catch (e) {} }
+  }
+  renderAll();
+  if (ADMIN && !state) loadRoster();
+  pollRemote();
+  if (!DEMO) setInterval(pollRemote, 15000);
+  if ("serviceWorker" in navigator && location.protocol === "https:") window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+})();
+</script>
+</body>
+</html>

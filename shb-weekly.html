@@ -393,7 +393,8 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
       $("ro-reload").onclick = function () { loadRoster(true); };
       $("mk").onclick = function () {
         var on = roster.filter(function (x) { return x.on; }), names = on.map(function (x) { return x.n; }), top = on.filter(function (x) { return x.top; }).map(function (x) { return x.n; });
-        if (names.length < 2) { toast("Minimal 2 peserta"); return; } if (names.length > 32) { toast("Maksimal 32 peserta"); return; }
+        if (names.length < 2) { toast("Minimal 2 peserta"); return; }
+        var S0 = nextPow2(names.length); if (top.length && S0 - names.length < top.length && !confirm("Jumlah peserta " + names.length + " tidak pas: hanya " + (S0 - names.length) + " dari " + top.length + " Kasta 1 yang bisa langsung babak 2. Tetap buat bracket?")) return; if (names.length > 32) { toast("Maksimal 32 peserta"); return; }
         var rnd = $("rnd").checked, thr = $("thr").checked, edn = $("edn").value.trim();
         doDraw(names, rnd, function () { state = create(names, rnd, thr, top, edn); firstDraw = true; $("admin").removeAttribute("data-mode"); persist(); });
       };
@@ -418,8 +419,8 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
   function updCount() {
     var c = $("cnt"); if (!c) return;
     var on = roster.filter(function (x) { return x.on; }), n = on.length, tp = on.filter(function (x) { return x.top; }).length, S = n >= 2 ? nextPow2(n) : 0, by = S - n, t = n + " peserta";
-    if (S) { t += " \u2192 bracket " + S + " slot, " + by + " langsung maju (BYE)"; if (tp && by < tp) t += ". \u26A0 Hanya " + by + " dari " + tp + " Kasta 1 yang bisa langsung babak 2 pada jumlah ini."; else if (tp && by > tp) t += ". " + (by - tp) + " peserta non-Kasta 1 juga dapat BYE (hasil undian)."; else if (tp) t += " \u2014 pas untuk " + tp + " Kasta 1."; }
-    c.textContent = t;
+    if (S) { t += " \u2192 bracket " + S + " slot, " + by + " langsung maju (BYE)"; if (tp && by < tp) t += ". \u26A0 TIDAK PAS: hanya " + by + " dari " + tp + " Kasta 1 yang bisa langsung babak 2. Biasanya ada nama ekstra, hapus centang yang tidak ikut (jumlah yang pas: " + (S - tp) + ")."; else if (tp && by > tp) t += ". " + (by - tp) + " peserta non-Kasta 1 juga dapat BYE (hasil undian)."; else if (tp) t += " \u2014 pas untuk " + tp + " Kasta 1."; }
+    c.textContent = t; c.style.color = (tp && S && by < tp) ? "#F87171" : "var(--gold)"; c.style.fontWeight = (tp && S && by < tp) ? "700" : "400";
   }
   function loadRoster(force) {
     if (rosterLoaded && !force) return;

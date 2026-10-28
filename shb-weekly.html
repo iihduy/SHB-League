@@ -428,7 +428,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     function done(list) { if (fin) return; fin = true; try { delete window[name]; } catch (e) { window[name] = undefined; } if (sc.parentNode) sc.parentNode.removeChild(sc); rosterLoaded = true; if (list && list.length) { roster = list; } if (!state) drawRoster(); }
     window[name] = function (resp) {
       var out = [];
-      try { (resp.table.rows || []).forEach(function (r) { var v = r.c && r.c[1] ? (r.c[1].f != null ? r.c[1].f : r.c[1].v) : null; if (!v) return; v = String(v).trim(); var top = v.indexOf("\u{1F947}") === 0; var nm = v.replace(/^(\u{1F947}|\u{1F948}|\u{1F949}|\u{1F195})\s*/u, "").trim(); if (nm) out.push({ n: nm, on: true, top: top }); }); } catch (e) {}
+      try { (resp.table.rows || []).forEach(function (r) { var v = r.c && r.c[1] ? (r.c[1].f != null ? r.c[1].f : r.c[1].v) : null; if (!v) return; v = String(v).trim(); var top = v.indexOf("\u{1F947}") === 0; var nm = v.replace(/^(\u{1F947}|\u{1F948}|\u{1F949}|\u{1F195})\s*/u, "").trim(); if (nm && nm.toLowerCase() !== "nama" && !(r.c[0] && typeof r.c[0].v === "string" && isNaN(parseFloat(r.c[0].v)))) out.push({ n: nm, on: true, top: top }); }); } catch (e) {}
       done(out);
     };
     sc.src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=responseHandler:" + name + "&gid=696233348&range=M2:V50&headers=0&_=" + Date.now();

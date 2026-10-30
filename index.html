@@ -580,6 +580,12 @@
 @keyframes chRise{to{height:var(--h)}}
 .ch-kasta{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px;animation:ssUp .8s 1.6s ease both}
 .ch-kasta b{color:var(--chalk)}
+.ch-win{margin:8px auto 4px;display:inline-flex;flex-direction:column;align-items:center;gap:2px;padding:8px 18px;border-radius:14px;border:1px solid var(--gold);background:linear-gradient(135deg,rgba(232,179,61,.28),rgba(232,179,61,.06));animation:ssUp .8s .7s ease both,chGlow 2.4s 1.6s ease-in-out infinite}
+.ch-win b{font-family:'Oswald',sans-serif;letter-spacing:3px;color:#fff;font-size:17px}.ch-wn{font-size:18px;letter-spacing:2px}
+@keyframes chGlow{50%{box-shadow:0 0 22px rgba(232,179,61,.55)}}
+.ch-trf{font-size:12px;color:var(--chalk);line-height:1.7;margin:2px 0 8px;animation:ssUp .8s .9s ease both}
+.ch-cups,.ch-kasta{text-align:center}.ch-cups{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:10px;animation:ssUp .8s 1.5s ease both}.ch-cups b{color:var(--chalk)}
+.ch-kh{font-family:'Oswald',sans-serif;letter-spacing:2px;font-size:11px;color:var(--gold);text-transform:uppercase;margin-bottom:2px}
 .ch-btns{display:flex;gap:10px;justify-content:center;animation:ssUp .8s 1.8s ease both}
 .ch-btns button{font-family:'Oswald',sans-serif;font-size:14px;padding:9px 20px;border-radius:99px;cursor:pointer;border:1px solid var(--gold)}
 .ch-btns .pri{background:var(--gold);color:#0B1F17;font-weight:600}
@@ -1690,7 +1696,7 @@
       el.innerHTML = last.map(function (m) { return dotHtml_(resultOf_(m, nama)); }).join("");
     });
   }
-  var profOpen = null, riwayatRequested = false, arsipRequested = false;
+  var profOpen = null, riwayatRequested = false, arsipRequested = false, pialaData = [], pialaDone = false;
 
   function avatarHtml_(name, size) {
     var hsh = 0, i;
@@ -1712,6 +1718,27 @@
     riwayatRequested = true;
     loadSheetRangeByName(SHEET_RIWAYAT_KASTA, RANGE_RIWAYAT_KASTA, renderRiwayatKasta, null);
     loadSheetRangeByName(SHEET_RIWAYAT_KLASEMEN, RANGE_RIWAYAT_KLASEMEN, renderRiwayatKlasemen, null);
+    loadSheetRangeByName("Piala", "A1:G500", renderPiala_, null);
+    setTimeout(function () { if (!pialaDone) { pialaDone = true; maybeShowChampion_(); } }, 5000);
+  }
+  // Tab "Piala": Bulan, Tanggal, Piala, Juara, Runner-up, Juara 3, Edisi (diisi otomatis dari halaman cup)
+  function renderPiala_(table) {
+    var rows = (table.rows || []).map(function (r) { return (r.c || []).map(function (c) { return c ? ((c.f !== undefined && c.f !== null) ? c.f : c.v) : null; }); });
+    var hdr = (table.cols || []).map(function (c) { return c && c.label; });
+    var ok = (hdr[0] === "Bulan" && hdr[2] === "Piala") || (rows[0] && rows[0][0] === "Bulan" && rows[0][2] === "Piala");
+    pialaData = ok ? rows.filter(function (r) { return r[0] && r[2] && r[3] && r[0] !== "Bulan"; }) : [];
+    var first = !pialaDone; pialaDone = true;
+    if (first || !champShown) maybeShowChampion_();
+  }
+  var BULAN_NO_ = { januari: 1, january: 1, februari: 2, february: 2, maret: 3, march: 3, april: 4, mei: 5, may: 5, juni: 6, june: 6, juli: 7, july: 7, agustus: 8, august: 8, september: 9, oktober: 10, october: 10, november: 11, desember: 12, december: 12 };
+  function bulanKey_(s) {
+    var m = String(s || "").trim().toLowerCase().match(/^([a-z]+)\s+(\d{4})$/);
+    return m && BULAN_NO_[m[1]] ? Number(m[2]) * 100 + BULAN_NO_[m[1]] : String(s || "");
+  }
+  function pialaBulan_(bulan) { var k = bulanKey_(bulan); return pialaData.filter(function (r) { return bulanKey_(r[0]) === k; }); }
+  function sebutan_(n) {
+    var t = { 2: "DOUBLE WINNER", 3: "TRIPLE WINNER", 4: "QUADRUPLE WINNER", 5: "QUINTUPLE WINNER", 6: "SEXTUPLE WINNER", 7: "SEPTUPLE WINNER" };
+    return t[n] || (n + "X WINNER");
   }
   function ensureArsip_() {
     if (arsipRequested) return;
@@ -2925,7 +2952,7 @@
 
   function maybeShowChampion_() {
     var rk = riwayatKlasemenData.filter(function (r) { return r[0] !== 'Bulan' && r[2] !== 'Nama'; });
-    if (!rk.length || champShown) return;
+    if (!rk.length || champShown || !pialaDone) return;
     var latest = rk[rk.length - 1][0];
     if (lsGet_("shb_champ_seen") === String(latest)) return;
     var rows = rk.filter(function (r) { return r[0] === latest; });
@@ -2937,12 +2964,22 @@
       var dl = k === 1 ? 1.1 : (k === 2 ? 0.5 : 0.1);
       return "<div class='ch-col p" + k + "'><div class='ch-nm' style='animation-delay:" + (dl + 0.7) + "s'>" + escHtml_(r[2]) + "</div><div class='ch-pt' style='animation-delay:" + (dl + 0.8) + "s'>" + r[10] + " poin</div><div class='ch-bar' style='animation-delay:" + dl + "s'>" + medal + "</div></div>";
     }
-    var k1 = riwayatKastaData.filter(function (r) { return r[0] === latest && r[5] === "Kasta 1"; }).map(function (r) { return r[1]; });
+    function kastaList_(label) { return riwayatKastaData.filter(function (r) { return r[0] === latest && r[5] === label; }).map(function (r) { return r[1]; }); }
+    var kl = [kastaList_("Kasta 1"), kastaList_("Kasta 2"), kastaList_("Kasta 3")];
+    var kastaHtml = kl[0].length || kl[1].length || kl[2].length ? "<div class='ch-kasta'><div class='ch-kh'>Pembagian kasta season berikutnya</div>" +
+      "<div>\u{1F947} Kasta 1: <b>" + (kl[0].map(escHtml_).join(", ") || "-") + "</b></div><div>\u{1F948} Kasta 2: <b>" + (kl[1].map(escHtml_).join(", ") || "-") + "</b></div><div>\u{1F949} Kasta 3: <b>" + (kl[2].map(escHtml_).join(", ") || "-") + "</b></div></div>" : "";
+    var champName = by[1][2], cupRows = pialaBulan_(latest);
+    var norm_ = function (x) { return stripBadge_(x).toLowerCase(); };
+    var cupWins = cupRows.filter(function (r) { return norm_(r[3]) === norm_(champName); });
+    var nWin = 1 + cupWins.length;
+    var winHtml = nWin >= 2 ? "<div class='ch-win'><span class='ch-wn'>" + "\u{1F3C6}".repeat(Math.min(nWin, 6)) + "</span><b>" + sebutan_(nWin) + "</b></div>" +
+      "<div class='ch-trf'>\u{1F3C6} Juara Liga " + escHtml_(String(latest)) + cupWins.map(function (r) { return "<br>\u{1F3C6} " + escHtml_(r[2]) + (r[6] ? " (" + escHtml_(r[6]) + ")" : ""); }).join("") + "</div>" : "";
+    var cupHtml = cupRows.length ? "<div class='ch-cups'><div class='ch-kh'>Juara cup bulan ini</div>" + cupRows.map(function (r) { return "<div>\u{1F3C6} " + escHtml_(r[2]) + (r[6] ? " (" + escHtml_(r[6]) + ")" : "") + ": <b>" + escHtml_(r[3]) + "</b></div>"; }).join("") + "</div>" : "";
     var el = document.getElementById("champ-modal");
     el.innerHTML = "<canvas id='ch-cv'></canvas><div class='ch-card'><div class='ch-crown'>\u{1F451}</div><div class='ch-eb'>JUARA SEASON</div><div class='ch-t'>" + escHtml_(String(latest).toUpperCase()) + "</div>" +
-      "<div style='color:var(--gold);font-family:Oswald,sans-serif;font-size:20px;animation:ssUp .8s .4s ease both'>" + escHtml_(by[1][2]) + "</div>" +
+      "<div style='color:var(--gold);font-family:Oswald,sans-serif;font-size:20px;animation:ssUp .8s .4s ease both'>" + escHtml_(by[1][2]) + "</div>" + winHtml +
       "<div class='ch-pod'>" + col(2, "\u{1F948}") + col(1, "\u{1F3C6}") + col(3, "\u{1F949}") + "</div>" +
-      "<div id='ch-awards' data-b='" + escHtml_(String(latest)) + "' class='ch-aw'></div>" + (k1.length ? "<div class='ch-kasta'>\u{1F947} Kasta 1: <b>" + k1.map(escHtml_).join(", ") + "</b></div>" : "") +
+      "<div id='ch-awards' data-b='" + escHtml_(String(latest)) + "' class='ch-aw'></div>" + cupHtml + kastaHtml +
       "<div class='ch-btns'><button class='sec' id='ch-close'>Tutup</button><button class='pri' id='ch-more'>Lihat Hasil Lengkap</button></div></div>";
     el.style.display = "flex";
     drawAwards_();

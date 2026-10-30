@@ -245,10 +245,15 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
   }
 
   function champId() { if (!state) return ""; var D = derive(state); return CUP_NAME + "|" + state.date + "|" + (state.edition || "") + "|" + (D.champ || ""); }
+  function semifinalists(D) {
+    var out = [];
+    if (D.R >= 2) D.rounds[D.R - 2].forEach(function (m) { if (m.p1) out.push(m.p1); if (m.p2) out.push(m.p2); });
+    return out.join(", ");
+  }
   function logChampion() {
     if (!state) return; var D = derive(state); if (!D.champ) return;
     if (!syncCfg.url || !syncCfg.key) { toast("Isi URL dan kunci di bagian Sinkron dulu"); return; }
-    var body = { action: "cup_champion", key: syncCfg.key, cup: CUP_NAME, date: new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }), edition: state.edition || "", champion: D.champ, runner: D.runner || "", third: D.thirdW || "" };
+    var body = { action: "cup_champion", key: syncCfg.key, cup: CUP_NAME, date: new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }), edition: state.edition || "", champion: D.champ, runner: D.runner || "", third: D.thirdW || "", semis: semifinalists(D) };
     var msg = $("lg-msg"); if (msg) msg.textContent = "Mengirim...";
     fetch(syncCfg.url, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) })
       .then(function () { lsSet(LS_LOGGED, champId()); toast("Juara dicatat ke riwayat liga"); if (msg) msg.textContent = "\u2713 Terkirim ke tab Piala di sheet."; })
@@ -295,13 +300,14 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     if (D.third) { pos.third = { x: fx, y: fy + CH + 70 }; H = Math.max(H, pos.third.y + CH + 14); }
     return { pos: pos, W: PADL + (R + 1) * (CW + GX), H: H + 6, cup: { x: fx + CW + GX - 6, y: fy + CH / 2 - 52 } };
   }
+  function topIcon() { return (state && state.icon) || "\u{1F947}"; }
   function isTop(p) { return !!(state && state.top && state.top.indexOf(p) >= 0); }
   function playerRow(mt, which, canEdit) {
     var p = which === 1 ? mt.p1 : mt.p2, s = which === 1 ? mt.s1 : mt.s2;
     if (!p) return "<div class='bp tbd'><span class='n'>" + (mt.r === 0 && mt.bye ? "BYE" : "menunggu pemenang") + "</span><span class='s'></span></div>";
     var cls = "bp", isW = mt.done && mt.winner === p, isL = mt.done && mt.loser === p && !mt.bye;
     if (isW) cls += " win"; if (isL) cls += " lose"; if (sel === p) cls += " sel";
-    return "<div class='" + cls + "' data-p='" + esc(p) + "'><span class='n'>" + (isTop(p) ? "\u{1F947} " : "") + esc(p) + (isW && mt.pw ? "<span class='pen'>PEN</span>" : "") + "</span><span class='s'>" + (s === null || s === undefined ? "" : s) + "</span></div>";
+    return "<div class='" + cls + "' data-p='" + esc(p) + "'><span class='n'>" + (isTop(p) ? topIcon() + " " : "") + esc(p) + (isW && mt.pw ? "<span class='pen'>PEN</span>" : "") + "</span><span class='s'>" + (s === null || s === undefined ? "" : s) + "</span></div>";
   }
   function cardHtml(mt, pos, ready) {
     var inv = sel && (mt.p1 === sel || mt.p2 === sel);
@@ -322,7 +328,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
         });
         if (r === 0 && mt.bye) {
           var bp = L.pos[mt.id], bw = mt.winner, bc = "bm byec" + (sel && bw !== sel ? " dim" : "");
-          h += "<div class='" + bc + "' data-id='" + mt.id + "' style='left:" + bp.x + "px;top:" + (bp.y + CH / 2 - 17) + "px;width:" + CW + "px;height:34px'><div class='bp' style='height:100%' data-p='" + esc(bw) + "'><span class='n'>" + (isTop(bw) ? "\u{1F947} " : "") + esc(bw) + "</span><span class='s' style='font-size:9px;font-family:Inter,sans-serif;color:var(--muted)'>langsung</span></div></div>";
+          h += "<div class='" + bc + "' data-id='" + mt.id + "' style='left:" + bp.x + "px;top:" + (bp.y + CH / 2 - 17) + "px;width:" + CW + "px;height:34px'><div class='bp' style='height:100%' data-p='" + esc(bw) + "'><span class='n'>" + (isTop(bw) ? topIcon() + " " : "") + esc(bw) + "</span><span class='s' style='font-size:9px;font-family:Inter,sans-serif;color:var(--muted)'>langsung</span></div></div>";
         } else h += cardHtml(mt, L.pos[mt.id], rd[mt.id]);
       });
     });
@@ -382,12 +388,12 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     var cfg = syncCfg;
     var h = "<div class='panel'><h3>Panel admin</h3>";
     if (!state) {
-      h += "<div class='hint' style='margin:0 0 8px'>Peserta diambil otomatis dari klasemen SHB League. Centang yang ikut, dan tandai \u{1F947} Kasta 1 bulan lalu (langsung masuk babak 2). Semua bisa diubah.</div>" +
+      h += "<div class='hint' style='margin:0 0 8px'>Peserta diambil otomatis dari klasemen SHB League. Centang yang ikut. Yang bertanda langsung masuk babak 2 (aturannya otomatis, lihat catatan di bawah). Semua bisa diubah.</div><div class='hint' id='srcnote' style='color:var(--gold);margin:0 0 8px'>" + esc(modeInfo || "Memeriksa pekan ke berapa...") + "</div>" +
         "<div id='ro'></div>" +
         "<div class='row' style='margin-top:6px'><input type='text' id='ro-add' placeholder='Tambah nama peserta lain' style='flex:1;min-width:0'><button class='btn sec' id='ro-addb'>Tambah</button></div>" +
-        "<input type='text' id='edn' placeholder='Nama edisi (opsional), mis. Pekan 1' style='margin-top:8px'>" +
+        "<input type='text' id='edn' placeholder='Nama edisi (opsional), mis. Pekan 1' value='" + esc(ednDefault) + "' style='margin-top:8px'>" +
         "<div class='hint' id='cnt' style='color:var(--gold)'></div>" +
-        "<label class='ck'><input type='checkbox' id='rnd' checked> Undi acak posisi (Kasta 1 dan peserta lain diundi terpisah)</label>" +
+        "<label class='ck'><input type='checkbox' id='rnd' checked> Undi acak posisi (yang langsung babak 2 dan peserta lain diundi terpisah)</label>" +
         "<label class='ck'><input type='checkbox' id='thr' checked> Ada perebutan juara 3</label>" +
         "<div class='row'><button class='btn' id='mk'>\u{1F3B2} Undi &amp; buat bracket</button><button class='btn sec' id='ro-reload'>Muat ulang peserta</button></div>";
     } else {
@@ -407,9 +413,9 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
       $("mk").onclick = function () {
         var on = roster.filter(function (x) { return x.on; }), names = on.map(function (x) { return x.n; }), top = on.filter(function (x) { return x.top; }).map(function (x) { return x.n; });
         if (names.length < 2) { toast("Minimal 2 peserta"); return; }
-        var S0 = nextPow2(names.length); if (top.length && S0 - names.length < top.length && !confirm("Jumlah peserta " + names.length + " tidak pas: hanya " + (S0 - names.length) + " dari " + top.length + " Kasta 1 yang bisa langsung babak 2. Tetap buat bracket?")) return; if (names.length > 32) { toast("Maksimal 32 peserta"); return; }
+        var S0 = nextPow2(names.length); if (top.length && S0 - names.length < top.length && !confirm("Jumlah peserta " + names.length + " tidak pas: hanya " + (S0 - names.length) + " dari " + top.length + " peserta yang bisa langsung babak 2. Tetap buat bracket?")) return; if (names.length > 32) { toast("Maksimal 32 peserta"); return; }
         var rnd = $("rnd").checked, thr = $("thr").checked, edn = $("edn").value.trim();
-        doDraw(names, rnd, function () { state = create(names, rnd, thr, top, edn); firstDraw = true; $("admin").removeAttribute("data-mode"); persist(); });
+        doDraw(names, rnd, function () { state = create(names, rnd, thr, top, edn); state.icon = topMode === "semi" ? "\u2B50" : "\u{1F947}"; firstDraw = true; $("admin").removeAttribute("data-mode"); persist(); });
       };
     } else {
       $("rs").onclick = function () { if (confirm("Hapus bracket ini dan mulai yang baru? Hasil yang sudah dimasukkan akan hilang.")) { var rts = Date.now(); state = null; sel = null; lsSet(LS_STATE, ""); lsSet(LS_REMOTE, ""); lsSet(LS_RESET, String(rts)); $("admin").removeAttribute("data-mode"); renderAll(); loadRoster(true); pushRemote({ v: 1, reset: true, ts: rts }); } };
@@ -417,11 +423,49 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     }
     $("sy-save").onclick = function () { syncCfg = { url: $("sy-url").value.trim(), key: $("sy-key").value.trim() }; lsSet(LS_SYNC, JSON.stringify(syncCfg)); if (state) pushRemote(); else setSync("Tersimpan. Akan dikirim saat bracket dibuat."); };
   }
-  var roster = [], rosterLoaded = false;
+  var roster = [], rosterLoaded = false, topMode = "kasta", ednDefault = "", modeInfo = "", pialaTried = false;
+  function nowYM() { return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }).slice(0, 7); }
+  function applyMode(prev) {
+    // prev = baris terakhir SHB Weekly Cup di bulan berjalan, atau null
+    var cnt = prev ? prev.count : 0;
+    ednDefault = "Pekan " + (cnt + 1);
+    if (prev && prev.semis.length >= 2) {
+      topMode = "semi";
+      var low = prev.semis.map(function (x) { return x.toLowerCase(); });
+      roster.forEach(function (x) { x.top = low.indexOf(x.n.toLowerCase()) >= 0; if (x.top) x.on = true; });
+      modeInfo = "Pekan " + (cnt + 1) + ": " + prev.semis.length + " semifinalis pekan lalu (" + prev.semis.join(", ") + ") langsung babak 2, apa pun kastanya.";
+    } else {
+      topMode = "kasta";
+      modeInfo = cnt ? "Pekan " + (cnt + 1) + ": data semifinalis pekan lalu belum tercatat (tekan \u201CCatat juara\u201D setelah cup selesai). Sementara dipakai Kasta 1; ubah manual kalau perlu." : "Pekan 1 bulan ini: Kasta 1 bulan lalu langsung babak 2.";
+    }
+    var n = $("srcnote"); if (n) n.textContent = modeInfo;
+    var e = $("edn"); if (e && !e.value) e.value = ednDefault;
+  }
+  function loadPrev() {
+    var name = "__shbw_pv_" + Math.random().toString(36).slice(2), sc = document.createElement("script"), fin = false;
+    function done(prev) { if (fin) return; fin = true; try { delete window[name]; } catch (e) { window[name] = undefined; } if (sc.parentNode) sc.parentNode.removeChild(sc); pialaTried = true; applyMode(prev); if (!state) drawRoster(); }
+    window[name] = function (resp) {
+      var prev = null;
+      try {
+        var rows = (resp.table.rows || []).map(function (r) { return (r.c || []).map(function (c) { return c ? (c.f != null ? c.f : c.v) : null; }); });
+        var hdr = (resp.table.cols || []).map(function (c) { return c && c.label; });
+        var ok = (hdr[0] === "Bulan" && hdr[2] === "Piala") || (rows[0] && rows[0][0] === "Bulan" && rows[0][2] === "Piala");
+        if (ok) {
+          var ym = nowYM();
+          var mine = rows.filter(function (r) { return r[2] === "SHB Weekly Cup" && String(r[1] || "").slice(0, 7) === ym; }).sort(function (a, b) { return String(a[1]).localeCompare(String(b[1])); });
+          if (mine.length) { var last = mine[mine.length - 1]; prev = { count: mine.length, semis: String(last[7] || "").split(",").map(function (x) { return x.trim(); }).filter(Boolean) }; }
+        }
+      } catch (e) {}
+      done(prev);
+    };
+    sc.src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=responseHandler:" + name + "&sheet=Piala&range=A1:H300&headers=0&_=" + Date.now();
+    sc.onerror = function () { done(null); }; setTimeout(function () { done(null); }, 12000);
+    document.body.appendChild(sc);
+  }
   function drawRoster() {
     var el = $("ro"); if (!el) return;
     if (!roster.length) { el.innerHTML = "<div class='hint'>" + (rosterLoaded ? "Daftar kosong. Tambahkan nama manual di bawah." : "Memuat peserta dari liga...") + "</div>"; updCount(); return; }
-    el.innerHTML = roster.map(function (x, i) { return "<div class='rl'><input type='checkbox' data-i='" + i + "' " + (x.on ? "checked" : "") + "><span class='nm'>" + esc(x.n) + "</span><button class='tg" + (x.top ? " on" : "") + "' data-t='" + i + "'>\u{1F947} Kasta 1</button></div>"; }).join("");
+    el.innerHTML = roster.map(function (x, i) { return "<div class='rl'><input type='checkbox' data-i='" + i + "' " + (x.on ? "checked" : "") + "><span class='nm'>" + esc(x.n) + "</span><button class='tg" + (x.top ? " on" : "") + "' data-t='" + i + "'>" + (topMode === "semi" ? "\u2B50 Semifinalis" : "\u{1F947} Kasta 1") + "</button></div>"; }).join("");
     el.onclick = function (e) {
       var t = e.target; if (!t || !t.getAttribute) return;
       if (t.getAttribute("data-t") !== null) { var i = +t.getAttribute("data-t"); roster[i].top = !roster[i].top; if (roster[i].top) roster[i].on = true; drawRoster(); }
@@ -432,13 +476,13 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
   function updCount() {
     var c = $("cnt"); if (!c) return;
     var on = roster.filter(function (x) { return x.on; }), n = on.length, tp = on.filter(function (x) { return x.top; }).length, S = n >= 2 ? nextPow2(n) : 0, by = S - n, t = n + " peserta";
-    if (S) { t += " \u2192 bracket " + S + " slot, " + by + " langsung maju (BYE)"; if (tp && by < tp) t += ". \u26A0 TIDAK PAS: hanya " + by + " dari " + tp + " Kasta 1 yang bisa langsung babak 2. Biasanya ada nama ekstra, hapus centang yang tidak ikut (jumlah yang pas: " + (S - tp) + ")."; else if (tp && by > tp) t += ". " + (by - tp) + " peserta non-Kasta 1 juga dapat BYE (hasil undian)."; else if (tp) t += " \u2014 pas untuk " + tp + " Kasta 1."; }
+    if (S) { t += " \u2192 bracket " + S + " slot, " + by + " langsung maju (BYE)"; if (tp && by < tp) t += ". \u26A0 TIDAK PAS: hanya " + by + " dari " + tp + " Kasta 1 yang bisa langsung babak 2. Biasanya ada nama ekstra, hapus centang yang tidak ikut (jumlah yang pas: " + (S - tp) + ")."; else if (tp && by > tp) t += ". " + (by - tp) + " peserta lain juga dapat BYE (hasil undian)."; else if (tp) t += " \u2014 pas untuk " + tp + " peserta langsung babak 2."; }
     c.textContent = t; c.style.color = (tp && S && by < tp) ? "#F87171" : "var(--gold)"; c.style.fontWeight = (tp && S && by < tp) ? "700" : "400";
   }
   function loadRoster(force) {
     if (rosterLoaded && !force) return;
     var name = "__shbw_ro_" + Math.random().toString(36).slice(2), sc = document.createElement("script"), fin = false;
-    function done(list) { if (fin) return; fin = true; try { delete window[name]; } catch (e) { window[name] = undefined; } if (sc.parentNode) sc.parentNode.removeChild(sc); rosterLoaded = true; if (list && list.length) { roster = list; } if (!state) drawRoster(); }
+    function done(list) { if (fin) return; fin = true; try { delete window[name]; } catch (e) { window[name] = undefined; } if (sc.parentNode) sc.parentNode.removeChild(sc); rosterLoaded = true; if (list && list.length) { roster = list; } if (!state) drawRoster(); loadPrev(); }
     window[name] = function (resp) {
       var out = [];
       try { (resp.table.rows || []).forEach(function (r) { var v = r.c && r.c[1] ? (r.c[1].f != null ? r.c[1].f : r.c[1].v) : null; if (!v) return; v = String(v).trim(); var top = v.indexOf("\u{1F947}") === 0; var nm = v.replace(/^(\u{1F947}|\u{1F948}|\u{1F949}|\u{1F195})\s*/u, "").trim(); if (nm && nm.toLowerCase() !== "nama" && !(r.c[0] && typeof r.c[0].v === "string" && isNaN(parseFloat(r.c[0].v)))) out.push({ n: nm, on: true, top: top }); }); } catch (e) {}

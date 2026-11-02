@@ -423,7 +423,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     }
     $("sy-save").onclick = function () { syncCfg = { url: $("sy-url").value.trim(), key: $("sy-key").value.trim() }; lsSet(LS_SYNC, JSON.stringify(syncCfg)); if (state) pushRemote(); else setSync("Tersimpan. Akan dikirim saat bracket dibuat."); };
   }
-  var roster = [], rosterLoaded = false, topMode = "kasta", ednDefault = "", modeInfo = "", pialaTried = false;
+  var modeInfo0 = "", roster = [], rosterLoaded = false, topMode = "kasta", ednDefault = "", modeInfo = "", pialaTried = false;
   function nowYM() { return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }).slice(0, 7); }
   function applyMode(prev) {
     // prev = baris terakhir SHB Weekly Cup di bulan berjalan, atau null
@@ -438,6 +438,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
       topMode = "kasta";
       modeInfo = cnt ? "Pekan " + (cnt + 1) + ": data semifinalis pekan lalu belum tercatat (tekan \u201CCatat juara\u201D setelah cup selesai). Sementara dipakai Kasta 1; ubah manual kalau perlu." : "Pekan 1 bulan ini: Kasta 1 bulan lalu langsung babak 2.";
     }
+    if (modeInfo0) modeInfo += " " + modeInfo0;
     var n = $("srcnote"); if (n) n.textContent = modeInfo;
     var e = $("edn"); if (e && !e.value) e.value = ednDefault;
   }
@@ -479,6 +480,26 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     if (S) { t += " \u2192 bracket " + S + " slot, " + by + " langsung maju (BYE)"; if (tp && by < tp) t += ". \u26A0 TIDAK PAS: hanya " + by + " dari " + tp + " Kasta 1 yang bisa langsung babak 2. Biasanya ada nama ekstra, hapus centang yang tidak ikut (jumlah yang pas: " + (S - tp) + ")."; else if (tp && by > tp) t += ". " + (by - tp) + " peserta lain juga dapat BYE (hasil undian)."; else if (tp) t += " \u2014 pas untuk " + tp + " peserta langsung babak 2."; }
     c.textContent = t; c.style.color = (tp && S && by < tp) ? "#F87171" : "var(--gold)"; c.style.fontWeight = (tp && S && by < tp) ? "700" : "400";
   }
+  // Klasemen kosong (bulan baru belum ada laga) -> pakai tab "Riwayat Kasta" bulan terakhir
+  function loadRosterFallback(done) {
+    var nm = "__shbw_rk_" + Math.random().toString(36).slice(2), sc = document.createElement("script"), fin = false;
+    function end(list) { if (fin) return; fin = true; try { delete window[nm]; } catch (e) { window[nm] = undefined; } if (sc.parentNode) sc.parentNode.removeChild(sc); done(list); }
+    window[nm] = function (resp) {
+      var out = [];
+      try {
+        var rows = (resp.table.rows || []).map(function (r) { return (r.c || []).map(function (c) { return c ? (c.f != null ? c.f : c.v) : null; }); }).filter(function (r) { return r[0] && r[1] && /^kasta\s*\d/i.test(String(r[5] || "")); });
+        if (rows.length) {
+          var last = String(rows[rows.length - 1][0]);
+          rows.forEach(function (r) { if (String(r[0]) === last) out.push({ n: String(r[1]).trim(), on: true, top: /^kasta\s*1$/i.test(String(r[5]).trim()) }); });
+          modeInfo0 = "Klasemen bulan ini masih kosong, daftar diambil dari Riwayat Kasta " + last + ".";
+        }
+      } catch (e) {}
+      end(out);
+    };
+    sc.src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=responseHandler:" + nm + "&sheet=Riwayat%20Kasta&range=A1:F300&_=" + Date.now();
+    sc.onerror = function () { end(null); }; setTimeout(function () { end(null); }, 12000);
+    document.body.appendChild(sc);
+  }
   function loadRoster(force) {
     if (rosterLoaded && !force) return;
     var name = "__shbw_ro_" + Math.random().toString(36).slice(2), sc = document.createElement("script"), fin = false;
@@ -486,7 +507,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     window[name] = function (resp) {
       var out = [];
       try { (resp.table.rows || []).forEach(function (r) { var v = r.c && r.c[1] ? (r.c[1].f != null ? r.c[1].f : r.c[1].v) : null; if (!v) return; v = String(v).trim(); var top = v.indexOf("\u{1F947}") === 0; var nm = v.replace(/^(\u{1F947}|\u{1F948}|\u{1F949}|\u{1F195})\s*/u, "").trim(); if (nm && nm.toLowerCase() !== "nama" && !(r.c[0] && typeof r.c[0].v === "string" && isNaN(parseFloat(r.c[0].v)))) out.push({ n: nm, on: true, top: top }); }); } catch (e) {}
-      done(out);
+      if (out.length) done(out); else loadRosterFallback(done);
     };
     sc.src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=responseHandler:" + name + "&gid=696233348&range=M2:V50&headers=0&_=" + Date.now();
     sc.onerror = function () { done(null); }; setTimeout(function () { done(null); }, 12000);

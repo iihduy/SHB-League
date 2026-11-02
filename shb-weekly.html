@@ -507,7 +507,14 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     window[name] = function (resp) {
       var out = [];
       try { (resp.table.rows || []).forEach(function (r) { var v = r.c && r.c[1] ? (r.c[1].f != null ? r.c[1].f : r.c[1].v) : null; if (!v) return; v = String(v).trim(); var top = v.indexOf("\u{1F947}") === 0; var nm = v.replace(/^(\u{1F947}|\u{1F948}|\u{1F949}|\u{1F195})\s*/u, "").trim(); if (nm && nm.toLowerCase() !== "nama" && !(r.c[0] && typeof r.c[0].v === "string" && isNaN(parseFloat(r.c[0].v)))) out.push({ n: nm, on: true, top: top }); }); } catch (e) {}
-      if (out.length) done(out); else loadRosterFallback(done);
+      if (!out.length) { loadRosterFallback(done); return; }
+      loadRosterFallback(function (fb) {
+        var have = {}, add = [];
+        out.forEach(function (x) { have[x.n.toLowerCase()] = 1; });
+        (fb || []).forEach(function (x) { if (!have[x.n.toLowerCase()]) { have[x.n.toLowerCase()] = 1; add.push(x.n); out.push(x); } });
+        modeInfo0 = add.length ? "Ditambahkan dari Riwayat Kasta (belum ada di klasemen): " + add.join(", ") + "." : "";
+        done(out);
+      });
     };
     sc.src = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=responseHandler:" + name + "&gid=696233348&range=M2:V50&headers=0&_=" + Date.now();
     sc.onerror = function () { done(null); }; setTimeout(function () { done(null); }, 12000);

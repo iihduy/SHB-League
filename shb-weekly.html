@@ -136,6 +136,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
   <div id="admin" style="display:none"></div>
 </div>
 
+<div class="ov" id="login-ov"><div class="card"><div style="font-family:'Oswald',sans-serif;letter-spacing:3px;color:var(--gold);font-size:12px;text-align:center;text-transform:uppercase">Masuk admin</div><div class="hint" style="text-align:center;margin:8px 0">Masukkan passcode admin untuk mencatat skor.</div><input type="password" id="li-pass" placeholder="Passcode" autocomplete="off" autocapitalize="characters"><div class="hint" id="li-err" style="color:#F87171;min-height:18px"></div><div class="row" style="justify-content:flex-end"><button class="btn sec" id="li-cancel">Lihat saja</button><button class="btn" id="li-go">Masuk</button></div></div></div>
 <div class="ov" id="sc-ov"><div class="card" id="sc-card"></div></div>
 <div class="ov" id="drum-ov"><div class="card" style="text-align:center"><div style="font-family:'Oswald',sans-serif;letter-spacing:3px;color:var(--muted);font-size:12px">MENGUNDI BRACKET</div><div class="drum" id="drum"></div><div class="hint">Menentukan posisi tiap pemain...</div></div></div>
 <div class="ch-ov" id="ch-ov"></div>
@@ -145,9 +146,9 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
 (function () {
   "use strict";
   var SHEET_ID = "1QHPqO4LEjtR7c6Lp-K8uqJaZnCdfuzAomgwUajF4RbQ", SHEET_TAB = "SHB Weekly Cup";
-  var LS_RESET = "shbw_reset_ts", LS_STATE = "shbw_state_v1", LS_SYNC = "hln_sync_v1", LS_REMOTE = "shbw_remote_v1", LS_CHAMP = "shbw_champ_seen";
+  var LS_RESET = "shbw_reset_ts", LS_STATE = "shbw_state_v1", LS_PASS = "shbw_pass", LS_REMOTE = "shbw_remote_v1", LS_CHAMP = "shbw_champ_seen";
   var CUP_NAME = "SHB Weekly Cup", LS_LOGGED = "shbw_logged";
-  var qs = new URLSearchParams(location.search), ADMIN = qs.has("admin"), DEMO = parseInt(qs.get("demo"), 10) || 0;
+  var qs = new URLSearchParams(location.search), WANT_ADMIN = qs.has("admin"), DEMO = parseInt(qs.get("demo"), 10) || 0, ADMIN = WANT_ADMIN && DEMO > 0;
   var SITE = "https://iihduy.github.io/SHB-League/shb-weekly.html";
   var CW = 160, CH = 62, GX = 42, PADT = 38, PADL = 14, UNIT = 80;
 
@@ -177,7 +178,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     var rest = names.filter(function (x) { return top.indexOf(x) < 0; });
     var n = names.length, S = nextPow2(n), seeds = rnd ? shuffle(top).concat(shuffle(rest)) : top.concat(rest);
     var slots = seedOrder(S).map(function (s) { return s <= n ? seeds[s - 1] : null; });
-    return { v: 1, title: "SHB Weekly Cup", n: n, S: S, slots: slots, third: !!third && S >= 4, top: top, edition: edition || "", results: {}, ts: Date.now(), date: new Date().toISOString().slice(0, 10) };
+    return { v: 1, title: "SHB Weekly Cup", n: n, S: S, slots: slots, third: !!third && S >= 4, top: top, edition: edition || "", results: {}, cid: String(Date.now()) + Math.random().toString(36).slice(2, 6), ts: Date.now(), date: new Date().toISOString().slice(0, 10) };
   }
   function resolve(mt, st) {
     var res = st.results[mt.id];
@@ -223,25 +224,60 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
   }
   function counts(D) { var real = allMatches(D).filter(function (m) { return !m.bye && !(m.r === 0 && (m.p1 === null || m.p2 === null)); }); return { total: real.length, done: real.filter(function (m) { return m.done; }).length }; }
 
-  // ---------- simpan & sinkron ----------
-  var syncCfg = (function () { try { return JSON.parse(lsGet(LS_SYNC) || "{}"); } catch (e) { return {}; } })();
-  var syncTimer = null, syncMsg = "";
-  function persist() {
-    state.ts = Date.now();
-    if (!DEMO) lsSet(LS_STATE, JSON.stringify(state));
-    renderAll();
-    if (ADMIN && !DEMO) { clearTimeout(syncTimer); syncTimer = setTimeout(pushRemote, 900); }
+  // ---------- admin (passcode) & simpan ----------
+  var WEBAPP = "https://script.google.com/macros/s/AKfycbyU8Gy6J1KvjXPljvkZ8dK7YskjZeazaiyuML5OGBvPov9g0P2UKGquoY2akyO71xcx/exec";
+  var adminName = "", adminPass = "", syncMsg = "", queue = Promise.resolve();
+  function setSync(t, bad) { syncMsg = t; var el = $("sync-msg"); if (el) { el.textContent = t; el.style.color = bad ? "#F87171" : ""; } }
+  function api(action, extra) {
+    var body = { action: action, pass: adminPass };
+    for (var k in extra) if (Object.prototype.hasOwnProperty.call(extra, k)) body[k] = extra[k];
+    return fetch(WEBAPP, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) }).then(function (r) { return r.json(); });
   }
-  function pushRemote(payload) {
-    payload = payload || state;
-    if (!syncCfg.url || !syncCfg.key) { setSync("Mode lokal: bracket belum terbagi ke penonton. Atur sinkron di bawah, atau salin data manual."); return; }
-    setSync("Mengirim ke sheet...");
-    var ts = payload.ts;
-    try {
-      fetch(syncCfg.url, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "hln_save", sheet: SHEET_TAB, key: syncCfg.key, data: payload }) })
-        .then(function () { setTimeout(function () { readRemote(function (r) { setSync(r && r.ts === ts ? "✓ Tersinkron ke sheet, penonton sudah bisa melihat." : "⚠ Belum terbaca di sheet. Cek URL, kunci, dan deploy ulang Apps Script (Versi baru)."); }); }, 4000); })
-        .catch(function () { setSync("⚠ Gagal mengirim. Cek koneksi."); });
-    } catch (e) { setSync("⚠ Gagal mengirim."); }
+  function localSave() { if (!DEMO && state) lsSet(LS_STATE, JSON.stringify(state)); }
+  function persist() { state.ts = Date.now(); localSave(); renderAll(); }
+  function adopt(d) { state = d; lsSet(LS_STATE, JSON.stringify(d)); lsSet(LS_REMOTE, JSON.stringify(d)); renderAll(); }
+  function authFail() { adminPass = ""; lsSet(LS_PASS, ""); ADMIN = false; renderAll(); showLogin("Passcode tidak berlaku. Masuk ulang."); }
+  function saveBracket(obj) {
+    setSync("Menyimpan ke sheet...");
+    return api("wk_save_bracket", { data: obj }).then(function (r) {
+      if (r && r.ok) { setSync("\u2713 Tersimpan. Penonton sudah bisa melihat."); if (!obj.reset && state) { state.ts = r.data.ts; localSave(); } }
+      else if (r && r.error === "auth") authFail();
+      else setSync("\u26A0 Gagal menyimpan (" + ((r && r.error) || "tidak diketahui") + "). Coba lagi.", true);
+    }).catch(function () { setSync("\u26A0 Tidak bisa menghubungi server. Belum tersimpan di sheet.", true); });
+  }
+  function sendResult(id, res) {
+    var cid = state ? (state.cid || "") : "";
+    queue = queue.then(function () {
+      setSync("Menyimpan skor...");
+      return api("wk_result", { cid: cid, id: id, res: res }).then(function (r) {
+        if (r && r.ok) { adopt(r.data); setSync("\u2713 Skor tersimpan. Penonton sudah bisa melihat."); }
+        else if (r && r.error === "auth") authFail();
+        else if (r && r.error === "stale") { setSync("\u26A0 Bracket sudah diganti admin lain. Skor ini tidak disimpan.", true); if (r.data && !r.data.reset) adopt(r.data); else { state = null; sel = null; renderAll(); } }
+        else setSync("\u26A0 Skor belum tersimpan (" + ((r && r.error) || "tidak diketahui") + "). Coba simpan lagi.", true);
+      }).catch(function () { setSync("\u26A0 Tidak bisa menghubungi server. Skor belum tersimpan di sheet, coba lagi.", true); });
+    });
+    return queue;
+  }
+  function showLogin(msg) { var o = $("login-ov"); if (!o) return; o.style.display = "flex"; $("li-err").textContent = msg || ""; var i = $("li-pass"); i.value = ""; setTimeout(function () { try { i.focus(); } catch (e) {} }, 50); }
+  function verify(pass, cb) {
+    adminPass = pass;
+    api("admin_check", {}).then(function (r) { if (r && r.ok) cb(true, r.name); else cb(false, null, "Passcode salah.", true); })
+      .catch(function () { cb(false, null, "Tidak bisa menghubungi server. Cek koneksi lalu coba lagi.", false); });
+  }
+  function sameSlots(a, b) { return a && b && a.slots && b.slots && JSON.stringify(a.slots) === JSON.stringify(b.slots); }
+  function reconcile(r, L0) {
+    var L = null; try { L = JSON.parse(L0 || "null"); } catch (e) {}
+    if (!r) return;
+    if (r.reset) { state = null; sel = null; renderAll(); return; }
+    if (sameSlots(L, r)) {
+      var miss = Object.keys(L.results || {}).filter(function (k) { return !r.results || !r.results[k]; });
+      adopt(r);
+      if (miss.length && confirm("Ada " + miss.length + " skor tersimpan di perangkat ini yang belum ada di sheet. Kirim ke sheet sekarang?")) miss.forEach(function (k) { sendResult(k, L.results[k]); });
+    } else adopt(r);
+  }
+  function enterAdmin(name) {
+    var L0 = lsGet(LS_STATE); ADMIN = true; adminName = name; lsSet(LS_PASS, adminPass); $("login-ov").style.display = "none";
+    readRemote(function (r) { reconcile(r, L0); renderAll(); if (!state) loadRoster(); toast("Masuk sebagai " + name); });
   }
 
   function champId() { if (!state) return ""; var D = derive(state); return CUP_NAME + "|" + state.date + "|" + (state.edition || "") + "|" + (D.champ || ""); }
@@ -252,14 +288,12 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
   }
   function logChampion() {
     if (!state) return; var D = derive(state); if (!D.champ) return;
-    if (!syncCfg.url || !syncCfg.key) { toast("Isi URL dan kunci di bagian Sinkron dulu"); return; }
-    var body = { action: "cup_champion", key: syncCfg.key, cup: CUP_NAME, date: new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }), edition: state.edition || "", champion: D.champ, runner: D.runner || "", third: D.thirdW || "", semis: semifinalists(D) };
+    var body = { action: "cup_champion", pass: adminPass, cup: CUP_NAME, date: new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }), edition: state.edition || "", champion: D.champ, runner: D.runner || "", third: D.thirdW || "", semis: semifinalists(D) };
     var msg = $("lg-msg"); if (msg) msg.textContent = "Mengirim...";
-    fetch(syncCfg.url, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) })
+    fetch(WEBAPP, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) })
       .then(function () { lsSet(LS_LOGGED, champId()); toast("Juara dicatat ke riwayat liga"); if (msg) msg.textContent = "\u2713 Terkirim ke tab Piala di sheet."; })
       .catch(function () { if (msg) msg.textContent = "\u26A0 Gagal mengirim. Cek koneksi."; });
   }
-  function setSync(t) { syncMsg = t; var el = $("sync-msg"); if (el) el.textContent = t; }
   var gcount = 0;
   function readRemote(cb) {
     var name = "__hln_cb_" + (++gcount) + "_" + Math.random().toString(36).slice(2), done = false, sc = document.createElement("script");
@@ -282,9 +316,9 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     if (DEMO) return;
     readRemote(function (r) {
       if (!r) return;
-      if (r.reset) { lsSet(LS_REMOTE, ""); if (!ADMIN && state) { state = null; sel = null; renderAll(); } return; }
+      if (r.reset) { lsSet(LS_REMOTE, ""); if (state && (!ADMIN || (state.ts || 0) < r.ts)) { state = null; sel = null; renderAll(); if (ADMIN) loadRoster(true); } return; }
       lsSet(LS_REMOTE, JSON.stringify(r));
-      if (ADMIN) { var rt = parseInt(lsGet(LS_RESET) || "0", 10); if (!state && r.ts > rt) { state = r; lsSet(LS_STATE, JSON.stringify(r)); renderAll(); } return; }
+      if (ADMIN) { var rt = parseInt(lsGet(LS_RESET) || "0", 10); if ((!state || r.ts > (state.ts || 0)) && r.ts > rt) { state = r; lsSet(LS_STATE, JSON.stringify(r)); renderAll(); } return; }
       if (!state || r.ts !== state.ts) { state = r; renderAll(); }
     });
   }
@@ -385,7 +419,6 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     el.style.display = "";
     if (el.getAttribute("data-mode") === (state ? "run" : "setup") && el.firstChild && !DEMO && state) { return; }
     el.setAttribute("data-mode", state ? "run" : "setup");
-    var cfg = syncCfg;
     var h = "<div class='panel'><h3>Panel admin</h3>";
     if (!state) {
       h += "<div class='hint' style='margin:0 0 8px'>Peserta diambil otomatis dari klasemen SHB League. Centang yang ikut. Yang bertanda langsung masuk babak 2 (aturannya otomatis, lihat catatan di bawah). Semua bisa diubah.</div><div class='hint' id='srcnote' style='color:var(--gold);margin:0 0 8px'>" + esc(modeInfo || "Memeriksa pekan ke berapa...") + "</div>" +
@@ -400,11 +433,8 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
       h += "<div class='hint' style='margin:0 0 8px'>Ketuk pertandingan (atau “Isi skor”) untuk memasukkan hasil. Pemenang maju otomatis.</div>" +
         "<div class='row'><button class='btn sec' id='rs'>Bracket baru / reset</button><button class='btn sec' id='cp'>Salin data (manual)</button></div>";
     }
-    h += "<details><summary>Sinkron ke penonton (Apps Script)</summary><div class='hint'>Supaya teman bisa melihat bracket live, isi URL web app Apps Script dan kunci rahasia yang sama dengan HLN CUP (tersimpan di browser ini, jadi kalau sudah diisi untuk HLN tidak perlu lagi). Tersimpan hanya di browser ini.</div>" +
-      "<input type='text' id='sy-url' placeholder='https://script.google.com/macros/s/.../exec' value='" + esc(cfg.url || "") + "' style='margin-top:6px'>" +
-      "<input type='password' id='sy-key' placeholder='Kunci rahasia' value='" + esc(cfg.key || "") + "' style='margin-top:6px'>" +
-      "<div class='row'><button class='btn sec' id='sy-save'>Simpan &amp; kirim</button></div><div class='hint' id='sync-msg'>" + esc(syncMsg) + "</div>" +
-      "<div class='hint'>Alternatif tanpa Apps Script: buat tab bernama <b>SHB Weekly Cup</b> di Google Sheet, lalu tempel hasil “Salin data” ke sel <b>A2</b> setiap kali ingin memperbarui.</div></details></div>";
+    h += "<div class='hint' style='margin-top:10px'>Masuk sebagai <b>" + esc(adminName) + "</b> &middot; <a href='#' id='lo' style='color:var(--gold)'>Keluar</a></div><div class='hint' id='sync-msg'>" + esc(syncMsg) + "</div>" +
+      "<details><summary>Cadangan manual</summary><div class='hint'>Kalau server bermasalah: buat tab bernama <b>SHB Weekly Cup</b> di Google Sheet, lalu tempel hasil \u201CSalin data\u201D ke sel <b>A2</b>.</div></details></div>";
     el.innerHTML = h;
     if (!state) {
       drawRoster();
@@ -415,13 +445,13 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
         if (names.length < 2) { toast("Minimal 2 peserta"); return; }
         var S0 = nextPow2(names.length); if (top.length && S0 - names.length < top.length && !confirm("Jumlah peserta " + names.length + " tidak pas: hanya " + (S0 - names.length) + " dari " + top.length + " peserta yang bisa langsung babak 2. Tetap buat bracket?")) return; if (names.length > 32) { toast("Maksimal 32 peserta"); return; }
         var rnd = $("rnd").checked, thr = $("thr").checked, edn = $("edn").value.trim();
-        doDraw(names, rnd, function () { state = create(names, rnd, thr, top, edn); state.icon = topMode === "semi" ? "\u2B50" : "\u{1F947}"; firstDraw = true; $("admin").removeAttribute("data-mode"); persist(); });
+        doDraw(names, rnd, function () { state = create(names, rnd, thr, top, edn); state.icon = topMode === "semi" ? "\u2B50" : "\u{1F947}"; firstDraw = true; $("admin").removeAttribute("data-mode"); persist(); saveBracket(state); });
       };
     } else {
-      $("rs").onclick = function () { if (confirm("Hapus bracket ini dan mulai yang baru? Hasil yang sudah dimasukkan akan hilang.")) { var rts = Date.now(); state = null; sel = null; lsSet(LS_STATE, ""); lsSet(LS_REMOTE, ""); lsSet(LS_RESET, String(rts)); $("admin").removeAttribute("data-mode"); renderAll(); loadRoster(true); pushRemote({ v: 1, reset: true, ts: rts }); } };
+      $("rs").onclick = function () { if (confirm("Hapus bracket ini dan mulai yang baru? Hasil yang sudah dimasukkan akan hilang.")) { var rts = Date.now(); state = null; sel = null; lsSet(LS_STATE, ""); lsSet(LS_REMOTE, ""); lsSet(LS_RESET, String(rts)); $("admin").removeAttribute("data-mode"); renderAll(); loadRoster(true); saveBracket({ v: 1, reset: true, ts: rts }); } };
       $("cp").onclick = function () { var t = JSON.stringify(state); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { toast("Data disalin. Tempel di sel A2 tab “SHB Weekly Cup”."); }, function () { prompt("Salin data ini:", t); }); else prompt("Salin data ini:", t); };
     }
-    $("sy-save").onclick = function () { syncCfg = { url: $("sy-url").value.trim(), key: $("sy-key").value.trim() }; lsSet(LS_SYNC, JSON.stringify(syncCfg)); if (state) pushRemote(); else setSync("Tersimpan. Akan dikirim saat bracket dibuat."); };
+    $("lo").onclick = function (e) { e.preventDefault(); adminPass = ""; lsSet(LS_PASS, ""); ADMIN = false; $("admin").removeAttribute("data-mode"); renderAll(); toast("Keluar dari admin"); };
   }
   var modeInfo0 = "", roster = [], rosterLoaded = false, topMode = "kasta", ednDefault = "", modeInfo = "", pialaTried = false;
   function nowYM() { return new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }).slice(0, 7); }
@@ -532,7 +562,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     if (!ADMIN || !state) return;
     var D = derive(state), mt = allMatches(D).filter(function (m) { return m.id === id; })[0];
     if (!mt || !mt.p1 || !mt.p2 || mt.bye) return;
-    cur = { id: id, p1: mt.p1, p2: mt.p2, s1: mt.s1 === null ? 0 : mt.s1, s2: mt.s2 === null ? 0 : mt.s2, pw: mt.pw, had: !!state.results[id], title: mt.isThird ? "Perebutan Juara 3" : roundName(mt.r, D.R) };
+    cur = { by: state.results[id] && state.results[id].by, id: id, p1: mt.p1, p2: mt.p2, s1: mt.s1 === null ? 0 : mt.s1, s2: mt.s2 === null ? 0 : mt.s2, pw: mt.pw, had: !!state.results[id], title: mt.isThird ? "Perebutan Juara 3" : roundName(mt.r, D.R) };
     drawScore(); $("sc-ov").style.display = "flex";
   }
   function drawScore() {
@@ -541,7 +571,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
       "<div class='sc' style='margin-top:8px'><div class='nm'>" + esc(c.p1) + "</div><div class='st'><button data-k='s1-'>&minus;</button><b>" + c.s1 + "</b><button data-k='s1+'>+</button></div></div>" +
       "<div class='sc'><div class='nm'>" + esc(c.p2) + "</div><div class='st'><button data-k='s2-'>&minus;</button><b>" + c.s2 + "</b><button data-k='s2+'>+</button></div></div>" +
       (tie ? "<div class='hint' style='margin-top:8px;color:var(--gold)'>Skor seri. Pilih pemenang adu penalti:</div><div class='pk'><button data-pw='1' class='" + (c.pw === c.p1 ? "on" : "") + "'>" + esc(c.p1) + "</button><button data-pw='2' class='" + (c.pw === c.p2 ? "on" : "") + "'>" + esc(c.p2) + "</button></div>" : "") +
-      "<div class='row' style='justify-content:flex-end'>" + (c.had ? "<button class='btn dg' data-k='del'>Hapus hasil</button>" : "") + "<button class='btn sec' data-k='cancel'>Batal</button><button class='btn' data-k='save'>Simpan</button></div>";
+      (c.by ? "<div class='hint' style='text-align:center;margin-top:8px'>Dicatat oleh " + esc(c.by) + "</div>" : "") + "<div class='row' style='justify-content:flex-end'>" + (c.had ? "<button class='btn dg' data-k='del'>Hapus hasil</button>" : "") + "<button class='btn sec' data-k='cancel'>Batal</button><button class='btn' data-k='save'>Simpan</button></div>";
   }
   $("sc-card").addEventListener("click", function (e) {
     var b = e.target.closest ? e.target.closest("button") : null; if (!b || !cur) return;
@@ -550,11 +580,12 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     if (k === "s1+") cur.s1 = Math.min(99, cur.s1 + 1); else if (k === "s1-") cur.s1 = Math.max(0, cur.s1 - 1);
     else if (k === "s2+") cur.s2 = Math.min(99, cur.s2 + 1); else if (k === "s2-") cur.s2 = Math.max(0, cur.s2 - 1);
     else if (k === "cancel") { $("sc-ov").style.display = "none"; cur = null; return; }
-    else if (k === "del") { delete state.results[cur.id]; $("sc-ov").style.display = "none"; cur = null; persist(); return; }
+    else if (k === "del") { var did = cur.id; delete state.results[did]; state.ts = Date.now(); localSave(); $("sc-ov").style.display = "none"; cur = null; renderAll(); sendResult(did, null); return; }
     else if (k === "save") {
       if (cur.s1 === cur.s2 && cur.pw !== cur.p1 && cur.pw !== cur.p2) { toast("Pilih pemenang adu penalti"); return; }
-      state.results[cur.id] = { a: cur.p1, b: cur.p2, s1: cur.s1, s2: cur.s2, pw: cur.s1 === cur.s2 ? cur.pw : null };
-      $("sc-ov").style.display = "none"; cur = null; persist(); return;
+      var rid = cur.id, rres = { a: cur.p1, b: cur.p2, s1: cur.s1, s2: cur.s2, pw: cur.s1 === cur.s2 ? cur.pw : null };
+      state.results[rid] = rres; state.ts = Date.now(); localSave();
+      $("sc-ov").style.display = "none"; cur = null; renderAll(); sendResult(rid, rres); return;
     }
     if (cur.s1 !== cur.s2) cur.pw = null;
     drawScore();
@@ -611,12 +642,24 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     var D0 = derive(state), guard = 0;
     while (guard++ < 60) { var rl = readyList(D0); if (!rl.length || (qs.get("upto") && counts(D0).done >= parseInt(qs.get("upto"), 10))) break; var m0 = rl[0]; state.results[m0.id] = { a: m0.p1, b: m0.p2, s1: 2 + (guard % 3), s2: guard % 2, pw: null }; D0 = derive(state); }
   } else {
-    var saved = lsGet(LS_STATE), cached = lsGet(LS_REMOTE);
-    try { if (saved) state = JSON.parse(saved); } catch (e) {}
-    if (!state && !ADMIN) { try { if (cached) state = JSON.parse(cached); } catch (e) {} }
+    var cached = lsGet(LS_REMOTE);
+    try { if (cached) state = JSON.parse(cached); } catch (e) {}
   }
   renderAll();
   if (ADMIN && !state) loadRoster();
+  function doLogin() {
+    var v = $("li-pass").value.trim(); if (!v) { $("li-err").textContent = "Isi passcode dulu."; return; }
+    $("li-err").textContent = "Memeriksa...";
+    verify(v, function (ok, name, err) { if (ok) enterAdmin(name); else { adminPass = ""; $("li-err").textContent = err; } });
+  }
+  $("li-go").onclick = doLogin;
+  $("li-pass").addEventListener("keydown", function (e) { if (e.key === "Enter") doLogin(); });
+  $("li-cancel").onclick = function () { $("login-ov").style.display = "none"; };
+  if (WANT_ADMIN && !DEMO) {
+    var sp = lsGet(LS_PASS);
+    if (sp) verify(sp, function (ok, name, err, wrong) { if (ok) enterAdmin(name); else { if (wrong) lsSet(LS_PASS, ""); adminPass = ""; showLogin(err); } });
+    else showLogin("");
+  }
   pollRemote();
   if (!DEMO) setInterval(pollRemote, 15000);
   if ("serviceWorker" in navigator && location.protocol === "https:") window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });

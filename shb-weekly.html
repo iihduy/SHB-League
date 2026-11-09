@@ -533,7 +533,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
       try {
         var rows = (resp.table.rows || []).map(function (r) { return (r.c || []).map(function (c) { return c ? (c.f != null ? c.f : c.v) : null; }); });
         var hdr = (resp.table.cols || []).map(function (c) { return c && c.label; });
-        var ok = (hdr[0] === "Bulan" && hdr[2] === "Piala") || (rows[0] && rows[0][0] === "Bulan" && rows[0][2] === "Piala");
+        var ok = (hdr[2] === "Piala" && hdr[3] === "Juara") || !!(rows[0] && rows[0][2] === "Piala" && rows[0][3] === "Juara");
         if (ok) {
           var ym = nowYM();
           var mine = rows.filter(function (r) { return r[2] === "SHB Weekly Cup" && String(r[1] || "").slice(0, 7) === ym; }).sort(function (a, b) { return String(a[1]).localeCompare(String(b[1])); });

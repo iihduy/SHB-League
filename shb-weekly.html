@@ -158,7 +158,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
   var SITE = "https://iihduy.github.io/SHB-League/shb-weekly.html";
   var CW = 160, CH = 62, GX = 42, PADT = 38, PADL = 14, UNIT = 80;
 
-  var viewing = false, backupState = null, backupAdmin = false, archive = [];
+  var swapMode = false, swapFirst = null, viewing = false, backupState = null, backupAdmin = false, archive = [];
   var state = null, sel = null, zoom = 1, shown = {}, firstDraw = true;
   function $(id) { return document.getElementById(id); }
   function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/'/g, "&#39;").replace(/"/g, "&quot;"); }
@@ -347,6 +347,18 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
   }
 
   // ---------- arsip bracket ----------
+  function swapHint() {
+    var h = $("sw-h"), b = $("sw"); if (!h || !b) return;
+    h.style.display = swapMode ? "" : "none"; b.textContent = swapMode ? "Batal tukar posisi" : "\u21C5 Tukar posisi pemain";
+    h.textContent = swapMode ? (swapFirst ? "Pilih pemain kedua untuk ditukar dengan " + swapFirst + "." : "Ketuk pemain pertama di bracket (babak 1 / langsung).") : "";
+  }
+  function doSwap(a, b) {
+    var ia = state.slots.indexOf(a), ib = state.slots.indexOf(b);
+    if (ia < 0 || ib < 0 || ia === ib) return;
+    state.slots[ia] = b; state.slots[ib] = a;
+    var tp = state.top || []; state.top = tp.slice();
+    state.ts = Date.now(); swapMode = false; swapFirst = null; sel = null; localSave(); renderAll(); swapHint(); saveBracket(state); toast(a + " dan " + b + " ditukar");
+  }
   function loadArchive() {
     if (DEMO) return;
     var name = "__arc_cb_" + (++gcount) + "_" + Math.random().toString(36).slice(2), done = false, sc = document.createElement("script");
@@ -501,7 +513,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
         "<div class='row'><button class='btn' id='mk'>\u{1F3B2} Undi &amp; buat bracket</button><button class='btn sec' id='ro-reload'>Muat ulang peserta</button></div>";
     } else {
       h += "<div class='hint' style='margin:0 0 8px'>Ketuk pertandingan (atau “Isi skor”) untuk memasukkan hasil. Pemenang maju otomatis.</div>" +
-        "<div class='row'><button class='btn sec' id='rs'>Bracket baru / reset</button><button class='btn sec' id='cp'>Salin data (manual)</button></div>";
+        "<div class='row'><button class='btn sec' id='rs'>Bracket baru / reset</button><button class='btn sec' id='cp'>Salin data (manual)</button></div><div class='row'><button class='btn sec' id='sw'>\u21C5 Tukar posisi pemain</button></div><div class='hint' id='sw-h' style='display:none;color:var(--gold)'></div>";
     }
     h += "<div class='hint' style='margin-top:10px'>Masuk sebagai <b>" + esc(adminName) + "</b> &middot; <a href='#' id='lo' style='color:var(--gold)'>Keluar</a></div><div class='hint' id='sync-msg'>" + esc(syncMsg) + "</div>" +
       "<details><summary>Cadangan manual</summary><div class='hint'>Kalau server bermasalah: buat tab bernama <b>SHB Weekly Cup</b> di Google Sheet, lalu tempel hasil \u201CSalin data\u201D ke sel <b>A2</b>.</div></details></div>";
@@ -520,6 +532,10 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
         doDraw(names, rnd, function () { state = create(names, rnd, thr, top, edn, pair); state.icon = topMode === "semi" ? "\u2B50" : "\u{1F947}"; firstDraw = true; $("admin").removeAttribute("data-mode"); persist(); saveBracket(state); });
       };
     } else {
+      $("sw").onclick = function () {
+        if (state && Object.keys(state.results || {}).length) { toast("Sudah ada skor, posisi tidak bisa ditukar"); return; }
+        swapMode = !swapMode; swapFirst = null; sel = null; swapHint();
+      };
       $("rs").onclick = function () { if (confirm("Hapus bracket ini dan mulai yang baru? Hasil yang sudah dimasukkan akan hilang.")) { var rts = Date.now(); state = null; sel = null; lsSet(LS_STATE, ""); lsSet(LS_REMOTE, ""); lsSet(LS_RESET, String(rts)); $("admin").removeAttribute("data-mode"); renderAll(); loadRoster(true); saveBracket({ v: 1, reset: true, ts: rts }); } };
       $("cp").onclick = function () { var t = JSON.stringify(state); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function () { toast("Data disalin. Tempel di sel A2 tab “SHB Weekly Cup”."); }, function () { prompt("Salin data ini:", t); }); else prompt("Salin data ini:", t); };
     }
@@ -690,6 +706,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
   // ---------- interaksi umum ----------
   $("binner").addEventListener("click", function (e) {
     var p = e.target.closest ? e.target.closest(".bp[data-p]") : null, c = e.target.closest ? e.target.closest(".bm") : null;
+    if (ADMIN && swapMode && p) { var nn = p.getAttribute("data-p"); if (!swapFirst) { swapFirst = nn; swapHint(); p.style.outline = "2px solid var(--gold)"; } else if (swapFirst === nn) { swapFirst = null; swapHint(); renderAll(); } else doSwap(swapFirst, nn); return; }
     if (ADMIN && c && c.classList.contains("adm")) { openScore(c.getAttribute("data-id")); return; }
     if (p) { var n = p.getAttribute("data-p"); sel = sel === n ? null : n; renderAll(); return; }
     if (sel) { sel = null; renderAll(); }

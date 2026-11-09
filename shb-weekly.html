@@ -180,11 +180,24 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     return out;
   }
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
-  function create(names, rnd, third, top, edition) {
+  function applyPair(slots, a, b, top) {
+    var ia = slots.indexOf(a), ib = slots.indexOf(b); if (ia < 0 || ib < 0 || ia === ib || (ia >> 1) === (ib >> 1)) return;
+    function ok(m) { var x = slots[2 * m], y = slots[2 * m + 1]; return x && y && top.indexOf(x) < 0 && top.indexOf(y) < 0; }
+    var M = slots.length / 2, m, tgt = -1;
+    if (ok(ia >> 1)) { tgt = ia >> 1; } else if (ok(ib >> 1)) { tgt = ib >> 1; }
+    for (m = 0; m < M && tgt < 0; m++) if (ok(m)) tgt = m;
+    if (tgt < 0) return;
+    function put(name, pos) { var cur = slots.indexOf(name); var o = slots[pos]; slots[pos] = name; slots[cur] = o; }
+    if (slots[2 * tgt] === a || slots[2 * tgt + 1] === a) { put(b, slots[2 * tgt] === a ? 2 * tgt + 1 : 2 * tgt); }
+    else if (slots[2 * tgt] === b || slots[2 * tgt + 1] === b) { put(a, slots[2 * tgt] === b ? 2 * tgt + 1 : 2 * tgt); }
+    else { put(a, 2 * tgt); put(b, 2 * tgt + 1); }
+  }
+  function create(names, rnd, third, top, edition, pair) {
     top = (top || []).filter(function (t) { return names.indexOf(t) >= 0; });
     var rest = names.filter(function (x) { return top.indexOf(x) < 0; });
     var n = names.length, S = nextPow2(n), seeds = rnd ? shuffle(top).concat(shuffle(rest)) : top.concat(rest);
     var slots = seedOrder(S).map(function (s) { return s <= n ? seeds[s - 1] : null; });
+    if (pair && pair.length === 2) applyPair(slots, pair[0], pair[1], top);
     return { v: 1, title: "SHB Weekly Cup", n: n, S: S, slots: slots, third: !!third && S >= 4, top: top, edition: edition || "", results: {}, cid: String(Date.now()) + Math.random().toString(36).slice(2, 6), ts: Date.now(), date: new Date().toISOString().slice(0, 10) };
   }
   function resolve(mt, st) {
@@ -479,6 +492,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
         "<div class='row' style='margin-top:6px'><input type='text' id='ro-add' placeholder='Tambah nama peserta lain' style='flex:1;min-width:0'><button class='btn sec' id='ro-addb'>Tambah</button></div>" +
         "<input type='text' id='edn' placeholder='Nama edisi (opsional), mis. Pekan 1' value='" + esc(ednDefault) + "' style='margin-top:8px'>" +
         "<div class='hint' id='cnt' style='color:var(--gold)'></div>" +
+        "<div class='hint' style='margin:8px 0 4px'>Pasangan wajib di babak 1 (opsional). Kalau salah satunya semifinalis, dia tidak dapat BYE.</div><div class='row' style='align-items:center'><select id='pr-a' style='flex:1;min-width:0'></select><b>vs</b><select id='pr-b' style='flex:1;min-width:0'></select></div>" +
         "<label class='ck'><input type='checkbox' id='rnd' checked> Undi acak posisi (yang langsung babak 2 dan peserta lain diundi terpisah)</label>" +
         "<label class='ck'><input type='checkbox' id='thr' checked> Ada perebutan juara 3</label>" +
         "<div class='row'><button class='btn' id='mk'>\u{1F3B2} Undi &amp; buat bracket</button><button class='btn sec' id='ro-reload'>Muat ulang peserta</button></div>";
@@ -496,9 +510,11 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
       $("mk").onclick = function () {
         var on = roster.filter(function (x) { return x.on; }), names = on.map(function (x) { return x.n; }), top = on.filter(function (x) { return x.top; }).map(function (x) { return x.n; });
         if (names.length < 2) { toast("Minimal 2 peserta"); return; }
+        var rnd = $("rnd").checked, thr = $("thr").checked, edn = $("edn").value.trim(), pa = $("pr-a").value, pb = $("pr-b").value, pair = pa && pb && pa !== pb ? [pa, pb] : null;
+        if ((pa || pb) && !pair) { toast("Pilih dua nama berbeda untuk pasangan wajib"); return; }
+        if (pair) top = top.filter(function (x) { return x !== pa && x !== pb; });
         var S0 = nextPow2(names.length); if (top.length && S0 - names.length < top.length && !confirm("Jumlah peserta " + names.length + " tidak pas: hanya " + (S0 - names.length) + " dari " + top.length + " peserta yang bisa langsung babak 2. Tetap buat bracket?")) return; if (names.length > 32) { toast("Maksimal 32 peserta"); return; }
-        var rnd = $("rnd").checked, thr = $("thr").checked, edn = $("edn").value.trim();
-        doDraw(names, rnd, function () { state = create(names, rnd, thr, top, edn); state.icon = topMode === "semi" ? "\u2B50" : "\u{1F947}"; firstDraw = true; $("admin").removeAttribute("data-mode"); persist(); saveBracket(state); });
+        doDraw(names, rnd, function () { state = create(names, rnd, thr, top, edn, pair); state.icon = topMode === "semi" ? "\u2B50" : "\u{1F947}"; firstDraw = true; $("admin").removeAttribute("data-mode"); persist(); saveBracket(state); });
       };
     } else {
       $("rs").onclick = function () { if (confirm("Hapus bracket ini dan mulai yang baru? Hasil yang sudah dimasukkan akan hilang.")) { var rts = Date.now(); state = null; sel = null; lsSet(LS_STATE, ""); lsSet(LS_REMOTE, ""); lsSet(LS_RESET, String(rts)); $("admin").removeAttribute("data-mode"); renderAll(); loadRoster(true); saveBracket({ v: 1, reset: true, ts: rts }); } };
@@ -557,7 +573,12 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
     };
     updCount();
   }
+  function fillPair() {
+    var a = $("pr-a"), b = $("pr-b"); if (!a || !b) return;
+    [a, b].forEach(function (s) { var v = s.value; s.innerHTML = "<option value=''>\u2014 tidak ada \u2014</option>" + roster.filter(function (x) { return x.on; }).map(function (x) { return "<option>" + esc(x.n) + "</option>"; }).join(""); s.value = v; if (s.value !== v) s.value = ""; });
+  }
   function updCount() {
+    fillPair();
     var c = $("cnt"); if (!c) return;
     var on = roster.filter(function (x) { return x.on; }), n = on.length, tp = on.filter(function (x) { return x.top; }).length, S = n >= 2 ? nextPow2(n) : 0, by = S - n, t = n + " peserta";
     if (S) { t += " \u2192 bracket " + S + " slot, " + by + " langsung maju (BYE)"; if (tp && by < tp) t += ". \u26A0 TIDAK PAS: hanya " + by + " dari " + tp + " Kasta 1 yang bisa langsung babak 2. Biasanya ada nama ekstra, hapus centang yang tidak ikut (jumlah yang pas: " + (S - tp) + ")."; else if (tp && by > tp) t += ". " + (by - tp) + " peserta lain juga dapat BYE (hasil undian)."; else if (tp) t += " \u2014 pas untuk " + tp + " peserta langsung babak 2."; }

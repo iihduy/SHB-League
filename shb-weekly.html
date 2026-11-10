@@ -368,7 +368,7 @@ summary{cursor:pointer;color:var(--gold);font-size:13px}
       try {
         var rows = (resp && resp.table && resp.table.rows) || [], c0 = resp && resp.table && resp.table.cols && resp.table.cols[0] ? resp.table.cols[0].label : "";
         var first = rows[0] && rows[0].c && rows[0].c[0] ? rows[0].c[0].v : "";
-        if (c0 === "Tanggal" || first === "Tanggal") rows.forEach(function (r) {
+        rows.forEach(function (r) {
           var v = r.c && r.c[3] ? r.c[3].v : null; if (typeof v !== "string" || v.charAt(0) !== "{") return;
           try { var o = JSON.parse(v); if (o && o.v === 1 && o.slots && o.S) out.push(o); } catch (e) {}
         });
